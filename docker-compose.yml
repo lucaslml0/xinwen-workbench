@@ -1,0 +1,21 @@
+services:
+  workbench:
+    build: .
+    image: xinwen-workbench:latest
+    container_name: xinwen-workbench
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      - WB_CHAT_DIR=/data/chat
+      - WB_BUS_DIR=/data/agent-bus
+    ports:
+      - "127.0.0.1:18080:18080"
+    volumes:
+      - ./data:/data
+      - /opt/shared/agent-bus:/data/agent-bus
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import socket; s=socket.create_connection(('127.0.0.1',18080),timeout=2); s.close()"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s

@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>聊天 · 我的个人工作台</title>
+<style>
+:root{--bg:#f4f4f5;--card:#fff;--border:#e4e4e7;--ink:#18181b;--muted:#71717a;--accent:#0f766e;--accent-soft:#f0fdfa;--me:#0f766e;--me-text:#fff}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--ink);font-size:15px}
+#app{display:flex;height:100dvh}
+#agents{width:260px;flex-shrink:0;background:var(--card);border-right:1px solid var(--border);display:flex;flex-direction:column}
+#agents h2{margin:0;padding:14px 16px;font-size:15px;border-bottom:1px solid var(--border)}
+#agentList{overflow-y:auto;flex:1}
+.agent{padding:12px 16px;border-bottom:1px solid #f0f0f0;cursor:pointer;display:flex;gap:10px;align-items:flex-start}
+.agent:hover{background:#fafafa}
+.agent.active{background:var(--accent-soft)}
+.avatar{width:38px;height:38px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0}
+.agent .info{flex:1;min-width:0}
+.agent .name{font-weight:600;display:flex;gap:6px;align-items:center}
+.dot{width:8px;height:8px;border-radius:50%;background:#a1a1aa;display:inline-block}
+.dot.online{background:#16a34a}
+.dot.relay{background:#0ea5e9}
+.agent .role{color:var(--muted);font-size:12px;margin-top:2px}
+.agent .last{color:var(--muted);font-size:12px;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#main{flex:1;display:flex;flex-direction:column;min-width:0}
+#chatHead{padding:12px 16px;background:var(--card);border-bottom:1px solid var(--border);display:flex;gap:10px;align-items:center}
+#chatHead .title{font-weight:700}
+#chatHead .status{color:var(--muted);font-size:13px}
+#msgs{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px}
+.msg{max-width:75%;padding:10px 12px;border-radius:12px;white-space:pre-wrap;word-break:break-word;line-height:1.5}
+.msg .meta{font-size:11px;color:var(--muted);margin-top:4px}
+.msg.user{align-self:flex-end;background:var(--me);color:var(--me-text)}
+.msg.user .meta{color:rgba(255,255,255,.75)}
+.msg.agent{align-self:flex-start;background:var(--card);border:1px solid var(--border)}
+.msg img{max-width:100%;border-radius:8px;display:block}
+.msg a{color:var(--accent)}
+#typing{padding:0 16px 6px;color:var(--muted);font-size:13px;min-height:20px}
+#composer{padding:12px 16px;background:var(--card);border-top:1px solid var(--border);display:flex;gap:10px;align-items:flex-end}
+#input{flex:1;border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-size:15px;font-family:inherit;resize:none;min-height:44px;max-height:140px}
+#sendBtn{background:var(--accent);color:#fff;border:0;border-radius:10px;padding:0 18px;height:44px;font-size:15px;cursor:pointer}
+#sendBtn:disabled{opacity:.5;cursor:default}
+#uploadBtn{border:1px solid var(--border);background:#fff;border-radius:10px;height:44px;padding:0 12px;cursor:pointer}
+#err{padding:8px 16px;color:#b91c1c;font-size:13px;display:none}
+@media(max-width:700px){#agents{width:96px}#agents h2,.agent .role,.agent .last{display:none}.agent{justify-content:center}.msg{max-width:90%}}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="agents"><h2>助手</h2><div id="agentList"></div></div>
+  <div id="main">
+    <div id="chatHead"><div class="avatar" id="headAvatar">R</div><div><div class="title" id="headName">加载中…</div><div class="status" id="headStatus"></div></div></div>
+    <div id="msgs"></div>
+    <div id="typing"></div>
+    <div id="err"></div>
+    <div id="composer">
+      <input type="file" id="fileInput" style="display:none">
+      <button id="uploadBtn" title="上传图片/文件">＋</button>
+      <textarea id="input" rows="1" placeholder="给 Rumi 发消息…（Cmd/Alt+Enter 发送，Enter 换行）"></textarea>
+      <button id="sendBtn">发送</button>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+"use strict";
+var params=new URLSearchParams(location.search);
+var current=params.get("agent")||"rumi";
+var agents=[];
+var msgs=[];
+var es=null, pollTimer=null, agentsTimer=null;
+var streamBubble=null, streamId=null;
+function esc(s){return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
+function fmtTs(ts){if(!ts)return"";var d=new Date(ts*1000);return ("0"+d.getHours()).slice(-2)+":"+("0"+d.getMinutes()).slice(-2);}
+function showErr(t){var e=document.getElementById("err");if(!t){e.style.display="none";e.textContent="";return;}e.style.display="block";e.textContent=t;}
+function api(path,opt){return fetch(path,Object.assign({credentials:"same-origin",headers:{"Content-Type":"application/json"}},opt||{}));}
+function renderAgents(){
+  var list=document.getElementById("agentList");list.innerHTML="";
+  agents.forEach(function(a){
+    var div=document.createElement("div");div.className="agent"+(a.id===current?" active":"");
+    var online=a.status==="poll"||a.status==="relay";
+    div.innerHTML='<div class="avatar">'+esc(a.initial||a.name.slice(0,1))+'</div><div class="info"><div class="name">'+esc(a.name)+' <span class="dot '+(online?(a.status==="relay"?"relay":"online"):"")+'"></span></div><div class="role">'+esc(a.role||"")+'</div><div class="last">'+esc(a.lastText||"")+'</div></div>';
+    div.onclick=function(){selectAgent(a.id);};
+    list.appendChild(div);
+  });
+  var cur=agents.find(function(a){return a.id===current;});
+  if(cur){document.getElementById("headAvatar").textContent=cur.initial||cur.name.slice(0,1);document.getElementById("headName").textContent=cur.name;document.getElementById("headStatus").textContent=cur.statusText||"";}
+}
+function renderMsgs(){
+  var box=document.getElementById("msgs");box.innerHTML="";
+  msgs.forEach(function(m){
+    var div=document.createElement("div");
+    var who=m.from==="user"?"user":"agent";
+    div.className="msg "+who;
+    var body="";
+    if(m.image){body+='<img src="'+esc(m.image)+'" alt="图片">';}
+    if(m.file){body+='<a href="'+esc(m.file.url)+'" target="_blank" rel="noopener">'+esc(m.file.name||"文件")+'</a>';}
+    if(m.text){body+=esc(m.text);}
+    if(!body)body="(空消息)";
+    var name=m.from==="user"?"我":(m.from||"");
+    div.innerHTML=body+'<div class="meta">'+esc(name)+" · "+fmtTs(m.ts)+"</div>";
+    box.appendChild(div);
+  });
+  box.scrollTop=box.scrollHeight;
+}
+function loadAgents(){
+  return api("/api/chat/agents").then(function(r){if(r.status===401)throw new Error("unauthorized");return r.json();}).then(function(d){
+    if(!d.ok)throw new Error(d.msg||"加载助手失败");
+    agents=d.agents||[];
+    if(!agents.length)throw new Error("没有可用助手");
+    if(!agents.some(function(a){return a.id===current;}))current=agents[0].id;
+    renderAgents();
+  });
+}
+function loadMsgs(markRead){
+  return api("/api/chat/messages?agent="+encodeURIComponent(current)).then(function(r){if(r.status===401)throw new Error("unauthorized");return r.json();}).then(function(d){
+    if(!d.ok)throw new Error(d.msg||"加载消息失败");
+    msgs=d.messages||[];
+    renderMsgs();
+    if(markRead!==false&&msgs.length){
+      var last=msgs[msgs.length-1].id;
+      api("/api/chat/read",{method:"POST",body:JSON.stringify({agent:current,up_to:last})}).catch(function(){});
+    }
+  });
+}
+function selectAgent(id){
+  current=id;
+  try{history.replaceState(null,"","/chat?agent="+encodeURIComponent(id));}catch(e){}
+  streamBubble=null;streamId=null;
+  renderAgents();loadMsgs().catch(function(e){showErr(String(e.message||e));});
+}
+function sendText(){
+  var ta=document.getElementById("input");var text=ta.value.trim();
+  if(!text)return;
+  var btn=document.getElementById("sendBtn");btn.disabled=true;
+  api("/api/chat/send",{method:"POST",body:JSON.stringify({agent:current,text:text})}).then(function(r){return r.json().then(function(d){return {st:r.status,d:d};});}).then(function(res){
+    btn.disabled=false;
+    if(!res.d.ok){showErr(res.d.msg||("发送失败 "+res.st));return;}
+    ta.value="";showErr("");
+    loadMsgs(false);
+  }).catch(function(e){btn.disabled=false;showErr(String(e.message||e));});
+}
+function startSSE(){
+  if(!("EventSource" in window))return false;
+  try{es=new EventSource("/api/chat/stream");}catch(e){return false;}
+  es.addEventListener("hello",function(ev){try{var d=JSON.parse(ev.data);if(d.stream&&d.stream[current])showStream(d.stream[current].stream_id,d.stream[current].text);}catch(e){}});
+  es.addEventListener("message",function(ev){try{var d=JSON.parse(ev.data);if(d.agent!==current)return;var m=d.message;if(!msgs.some(function(x){return x.id===m.id;})){msgs.push(m);renderMsgs();var last=msgs[msgs.length-1].id;api("/api/chat/read",{method:"POST",body:JSON.stringify({agent:current,up_to:last})}).catch(function(){});}}catch(e){}});
+  es.addEventListener("typing",function(ev){try{var d=JSON.parse(ev.data);if(d.agent!==current)return;document.getElementById("typing").textContent=d.typing?"对方正在输入…":"";}catch(e){}});
+  es.addEventListener("stream",function(ev){try{var d=JSON.parse(ev.data);if(d.agent!==current)return;if(d.done){clearStream();loadMsgs(false);}else{showStream(d.stream_id,d.text);}}catch(e){}});
+  es.onerror=function(){/* 浏览器会自动重连；同时靠轮询兜底 */};
+  return true;
+}
+function showStream(sid,text){
+  streamId=sid;
+  var box=document.getElementById("msgs");
+  if(!streamBubble){streamBubble=document.createElement("div");streamBubble.className="msg agent";box.appendChild(streamBubble);}
+  streamBubble.innerHTML=esc(text)+'<div class="meta">正在输入…</div>';
+  box.scrollTop=box.scrollHeight;
+}
+function clearStream(){streamBubble=null;streamId=null;}
+document.getElementById("sendBtn").onclick=sendText;
+document.getElementById("input").addEventListener("keydown",function(e){if(e.key==="Enter"&&(e.metaKey||e.altKey)){e.preventDefault();sendText();}});
+document.getElementById("uploadBtn").onclick=function(){document.getElementById("fileInput").click();};
+document.getElementById("fileInput").addEventListener("change",function(e){
+  var f=e.target.files&&e.target.files[0];if(!f)return;
+  var rd=new FileReader();
+  rd.onload=function(){api("/api/chat/upload",{method:"POST",body:JSON.stringify({agent:current,filename:f.name,mime:f.type||"",data:rd.result})}).then(function(r){return r.json();}).then(function(d){if(!d.ok)showErr(d.msg||"上传失败");else loadMsgs(false);}).catch(function(err){showErr(String(err.message||err));});};
+  rd.readAsDataURL(f);e.target.value="";
+});
+loadAgents().then(function(){return loadMsgs();}).then(function(){
+  startSSE();
+  pollTimer=setInterval(function(){if(!es||es.readyState===EventSource.CLOSED)loadMsgs(false);},5000);
+  agentsTimer=setInterval(loadAgents,30000);
+}).catch(function(e){
+  if(String(e.message)==="unauthorized"){document.getElementById("msgs").innerHTML='<div class="msg agent">未登录，请先在首页登录，再打开聊天。</div>';}
+  else showErr(String(e.message||e));
+});
+})();
+</script>
+</body>
+</html>

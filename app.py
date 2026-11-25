@@ -63,7 +63,8 @@ CHAT_LOCK = os.path.join(CHAT_DIR, "history.lock")
 # Agent 名单：(id, 显示名, 首字母, 头像 class, 职责说明)
 # 按你的实际情况改：主 Agent 一个，子 Agent 若干；子 Agent 每 30 分钟来工单池领一次单
 CHAT_AGENTS = [
-    ("muse", "muse", "M", "muse", "主 Agent · 拆单、验收、汇报"),
+    ("rumi", "Rumi", "R", "rumi", "主 Agent · 拆单、验收、汇报"),
+    ("Lei", "Lei", "L", "muse", "子 Agent · 领单执行"),
     ("muse-2", "muse-2", "2", "m2", "子 Agent · 领单执行"),
 ]
 BUS_DIR = os.environ.get("WB_BUS_DIR", os.path.join(BASE, "agent-bus"))  # 子 Agent 状态目录（工单池状态文件放这里）
@@ -558,7 +559,7 @@ def chat_agent_status():
     # per-agent quota files: each sub-agent writes its own workspace file
     # /opt/shared/agent-bus/agents/<aid>/quota.json ; present + valid wins
     bus_agents = "/opt/shared/agent-bus/agents"
-    for _aid in ("muse", "muse-1", "muse-2", "muse-3", "muse-4"):
+    for _aid in ("Lei", "muse-1", "muse-2", "muse-3", "muse-4"):
         try:
             with open(os.path.join(bus_agents, _aid, "quota.json"), encoding="utf-8") as f:
                 _q = json.load(f)
@@ -570,7 +571,7 @@ def chat_agent_status():
             pass
     for aid, name, initial, cls, role in CHAT_AGENTS:
         status, status_text = "poll", "轮询模式 · 约 1 分钟取一次"
-        if aid == "muse":
+        if aid == "Lei":
             status, status_text = "relay", "中继模式 · 约 1 分钟回一次"
         elif aid == "muse-1":
             # muse-1 是平级调度者，不跑轮询心跳；以它是否在收件箱回过消息判断是否已接入
@@ -1946,12 +1947,12 @@ def fans_live_count(db_path):
 
 
 def latest_chat_preview():
-    """muse 收件箱最新一条的预览（用于工作台聊天入口卡片）。"""
-    msgs = chat_load("muse")
+    """Lei 收件箱最新一条的预览（用于工作台聊天入口卡片）。"""
+    msgs = chat_load("Lei")
     if not msgs:
         return "还没有消息，来聊一句吧"
     last = msgs[-1]
-    who = "你" if last.get("from") == "user" else "muse"
+    who = "你" if last.get("from") == "user" else "Lei"
     text = (last.get("text") or "").strip()
     if not text and last.get("image"):
         text = "[图片]"
@@ -2550,7 +2551,7 @@ def render_shell(data, mode, group, section_id, view, force_wx=False, acct="main
 
     if mode == "chat":
         # B区与D区都展示 web 聊天：整幅内嵌聊天页，不显示左栏
-        main = (f'<div class="d-head"><h2>💬 Agent 聊天</h2><span class="sub">web 聊天，与 muse / muse-1 / muse-2 / muse-3 / muse-4 对话</span></div>'
+        main = (f'<div class="d-head"><h2>💬 Agent 聊天</h2><span class="sub">web 聊天，与 Lei / muse-1 / muse-2 / muse-3 / muse-4 对话</span></div>'
                 f'<iframe class="embed-frame" src="/chat" title="Agent 聊天"></iframe>'
                 f'<div class="embed-note">聊天页打不开时，<a href="/chat" target="_blank" rel="noopener">在新窗口打开 →</a></div>')
         shell_cls = "shell no-side chat-mode"
@@ -3236,7 +3237,7 @@ class Handler(BaseHTTPRequestHandler):
             self.wfile.write(img)
             return
         if u.path.startswith("/avatar-") and u.path.endswith(".png"):
-            allowed = ("avatar-muse.png", "avatar-muse-1.png", "avatar-muse-2.png", "avatar-muse-3.png", "avatar-muse-4.png")
+            allowed = ("avatar-Lei.png", "avatar-muse.png", "avatar-muse-1.png", "avatar-muse-2.png", "avatar-muse-3.png", "avatar-muse-4.png")
             fn = u.path[1:]
             if fn not in allowed:
                 self.send_json({"ok": False, "msg": "not found"}, 404); return
@@ -3253,7 +3254,7 @@ class Handler(BaseHTTPRequestHandler):
             self.wfile.write(img)
             return
         if u.path.startswith("/avatar-") and u.path.endswith(".mp4"):
-            allowed = ("avatar-muse.mp4", "avatar-muse-1.mp4", "avatar-muse-2.mp4", "avatar-muse-3.mp4", "avatar-muse-4.mp4")
+            allowed = ("avatar-Lei.mp4", "avatar-muse.mp4", "avatar-muse-1.mp4", "avatar-muse-2.mp4", "avatar-muse-3.mp4", "avatar-muse-4.mp4")
             fn = u.path[1:]
             if fn not in allowed:
                 self.send_json({"ok": False, "msg": "not found"}, 404); return

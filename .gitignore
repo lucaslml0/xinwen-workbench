@@ -19,3 +19,7 @@ __pycache__/
 *.tmp
 *.bak*
 .DS_Store
+
+# 本地部署文件：绝不进仓库
+.env
+data/
