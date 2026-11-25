@@ -641,6 +641,9 @@ def tasks_api():
                 k = k.strip(); v = v.strip()
                 if k == "认领者":
                     assignee = v
+                elif k == "指派给":
+                    if not assignee:
+                        assignee = v
                 elif k == "认领时间":
                     claimed_at = v
                 elif k == "状态":
@@ -649,6 +652,13 @@ def tasks_api():
                     source = v
             elif section == "任务" and s and not task_text:
                 task_text = s
+        # 状态归一化：task.md 里 in_progress / 进行中 等写法都归到 queued/doing/done，
+        # 否则看板三列与计数（只认这三个值）会漏掉该工单
+        status = {"queued": "queued", "待领取": "queued", "todo": "queued", "pending": "queued",
+                  "doing": "doing", "in_progress": "doing", "in-progress": "doing",
+                  "inprogress": "doing", "进行中": "doing",
+                  "done": "done", "completed": "done", "finished": "done",
+                  "complete": "done", "已完成": "done"}.get(status.strip().lower(), status)
         if not title:
             title = n
         tid = n
@@ -668,6 +678,7 @@ def tasks_api():
                 k, v = s[2:].split("：", 1)
                 if k.strip() == "状态":
                     result_status = v.strip()
+                    break
         preview_lines = []
         for ln in result_text.splitlines():
             s = ln.strip()
@@ -744,7 +755,7 @@ def chat_agent_status():
                 status, status_text = "offline", "待签到 · 未到岗"
             else:
                 try:
-                    with open(os.path.join(BUS_DIR, aid, "status.json"), encoding="utf-8") as f:
+                    with open(os.path.join(BUS_DIR, "agents", aid, "status.json"), encoding="utf-8") as f:
                         st = json.load(f)
                     _ls = st.get("last_seen", "").replace("Z", "+00:00")
                     _ls = re.sub(r"([+-]\d{2})(\d{2})$", r"\1:\2", _ls)
