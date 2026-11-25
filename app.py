@@ -755,7 +755,13 @@ def chat_agent_status():
                 status, status_text = "offline", "待签到 · 未到岗"
             else:
                 try:
-                    with open(os.path.join(BUS_DIR, "agents", aid, "status.json"), encoding="utf-8") as f:
+                    # 心跳文件位置：子 Agent 在 agents/<aid>/status.json；rumi 等固定 Agent
+                    # 的心跳在顶层 <aid>/status.json。agents/ 下没有就回落到顶层，
+                    # 否则 rumi 会因找不到文件一直显示离线。
+                    _sp = os.path.join(BUS_DIR, "agents", aid, "status.json")
+                    if not os.path.exists(_sp):
+                        _sp = os.path.join(BUS_DIR, aid, "status.json")
+                    with open(_sp, encoding="utf-8") as f:
                         st = json.load(f)
                     _ls = st.get("last_seen", "").replace("Z", "+00:00")
                     _ls = re.sub(r"([+-]\d{2})(\d{2})$", r"\1:\2", _ls)
