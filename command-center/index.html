@@ -151,9 +151,9 @@ button{font-family:inherit;cursor:pointer}
 
   <!-- KPI -->
   <section class="kpis" aria-label="概览">
-    <div class="kpi"><div><label>Agent 总数</label><div class="num" id="kpiTotal">5</div><div class="sub" id="kpiTotalSub">主调度 + muse-1 ~ muse-4</div></div><div class="icon i-teal">⬢</div></div>
+    <div class="kpi"><div><label>Agent 总数</label><div class="num" id="kpiTotal">5</div><div class="sub" id="kpiTotalSub">主调度 + atlas + muse-2 ~ muse-4</div></div><div class="icon i-teal">⬢</div></div>
     <div class="kpi"><div><label>子 Agent 池</label><div class="num" id="kpiPool">3 <span style="font-size:13px;color:var(--muted);font-weight:700">/ 30 分钟轮询</span></div><div class="sub" id="kpiPoolSub">muse-2 · muse-3 · muse-4 领单执行</div></div><div class="icon i-green">✓</div></div>
-    <div class="kpi"><div><label>调度者</label><div class="num">2</div><div class="sub">主 Agent + muse-1，各验自己派的单</div></div><div class="icon i-blue">◎</div></div>
+    <div class="kpi"><div><label>调度者</label><div class="num">2</div><div class="sub">主 Agent + atlas，各验自己派的单</div></div><div class="icon i-blue">◎</div></div>
     <div class="kpi"><div><label>聊天中继</label><div class="num" style="font-size:19px;padding-top:4px">工作日 09:30–21:00</div><div class="sub">12:00–13:00 午休暂停 · 约 1 分钟一轮</div></div><div class="icon i-amber">◷</div></div>
   </section>
 
@@ -190,7 +190,7 @@ button{font-family:inherit;cursor:pointer}
           <div class="lane"><div class="lane-head"><b>📥 待领取</b><span class="count c-gray">池</span></div><ul><li>新工单入池待轮询</li><li>按 <b>T / X 前缀</b>区分调度者</li><li>无工单不动仓库</li></ul></div>
           <div class="lane"><div class="lane-head"><b>⚙️ 执行中</b><span class="count c-blue">30m</span></div><ul><li>并行调研 / 批量体力活</li><li>流水线独立段</li><li>双人复核类任务</li></ul></div>
           <div class="lane"><div class="lane-head"><b>🔍 待验收</b><span class="count c-amber">验</span></div><ul><li>result 已回写</li><li>调度者<b>交叉对账</b></li><li>注明谁做的、验了什么</li></ul></div>
-          <div class="lane"><div class="lane-head"><b>✅ 已完成</b><span class="count c-green">报</span></div><ul><li>验收通过才向你汇报</li><li>muse-1 的单由它自汇总</li><li>双汇报线互不越界</li></ul></div>
+          <div class="lane"><div class="lane-head"><b>✅ 已完成</b><span class="count c-green">报</span></div><ul><li>验收通过才向你汇报</li><li>atlas 的单由它自汇总</li><li>双汇报线互不越界</li></ul></div>
         </div>
 
         <div class="redline"><b>⛔ 红线 · 子 Agent 一律不做</b><p>不发布、不代发消息、不花钱、无工单不动仓库、凭据不入任何文件。公众号草稿推送与拍板归主 Agent。</p></div>
@@ -209,7 +209,7 @@ button{font-family:inherit;cursor:pointer}
         <div class="chat-list">
           <div class="chat-item"><div class="ic">🌐</div><div><b>工作台 Web 聊天 <span class="tag tag-on">主入口</span></b><p>玩客云 <span class="mono">/opt/xinwen-workbench</span> · 路径 <span class="mono">/chat</span> · 用户消息靠右 · 支持发图片（经图床转链接，单张 ≤10MB，链接公开、勿传隐私图）</p></div></div>
           <div class="chat-item"><div class="ic">🔁</div><div><b>中继 cron · chat-relay-muse</b><p>工作日 09:30–21:00 运行，约 1 分钟一轮；12:00–13:00 午休暂停。非工作时段消息等下一时段处理。</p></div></div>
-          <div class="chat-item"><div class="ic">👥</div><div><b>会话成员</b><p id="chatMembers">主 Agent、muse-1、muse-2、muse-3、muse-4 —— 五个入口都在同一聊天页左侧栏。</p></div></div>
+          <div class="chat-item"><div class="ic">👥</div><div><b>会话成员</b><p id="chatMembers">主 Agent、atlas、muse-2、muse-3、muse-4 —— 五个入口都在同一聊天页左侧栏。</p></div></div>
         </div>
 
         <div class="schedule">
@@ -217,7 +217,7 @@ button{font-family:inherit;cursor:pointer}
             <thead><tr><th>对象</th><th>聊天轮询</th><th>状态</th></tr></thead>
             <tbody id="chatScheduleBody">
               <tr><td>中继时段</td><td>工作日 09:30–21:00<br><span style="color:var(--muted)">12:00–13:00 午休暂停</span></td><td><span class="tag tag-on" id="relayTag">—</span></td></tr>
-              <tr><td>muse-1</td><td>1 分钟一轮</td><td><span class="tag tag-on">运行</span></td></tr>
+              <tr><td>atlas</td><td>1 分钟一轮</td><td><span class="tag tag-on">运行</span></td></tr>
               <tr><td>muse-2 / muse-3</td><td>1 分钟一轮<br><span style="color:var(--muted)">工单仍 30 分钟</span></td><td><span class="tag tag-on">已改</span></td></tr>
               <tr><td>muse-4</td><td>1 分钟一轮<br><span style="color:var(--muted)">工单仍 30 分钟</span></td><td><span class="tag tag-on">已改</span></td></tr>
             </tbody>
@@ -227,7 +227,7 @@ button{font-family:inherit;cursor:pointer}
         <div class="timeline">
           <h3>指挥链路 · 一眼看懂</h3>
           <div class="tl"><div class="tl-dot"><i></i></div><div><b>你 → 工作台聊天 / 直接对话</b><p>下指令、拍板、验收结果都在这里。</p></div></div>
-          <div class="tl"><div class="tl-dot"><i></i></div><div><b>调度者拆单 → 工单池</b><p>主 Agent 与 muse-1 都能拆单派活，工单号前缀防撞。</p></div></div>
+          <div class="tl"><div class="tl-dot"><i></i></div><div><b>调度者拆单 → 工单池</b><p>主 Agent 与 atlas 都能拆单派活，工单号前缀防撞。</p></div></div>
           <div class="tl"><div class="tl-dot"><i></i></div><div><b>子 Agent 执行 → result 回池 → 对账汇报</b><p>没验过不汇报；汇报注明分工与核验内容。</p></div></div>
         </div>
 
@@ -248,7 +248,7 @@ button{font-family:inherit;cursor:pointer}
 /* 固定文案：主 Agent 与平级调度者（不在 agents/ 工位目录里）；子 Agent 由接口动态生成 */
 var FIXED={
   rumi:{id:'rumi',name:'主 Agent',role:'主调度者',type:'dispatch',cls:'av-main',init:'主',ip:'本机 · 指挥',job:'下工单、收单验货、交叉对账、最终汇报；公众号草稿推送与拍板',detail:'<b>主 Agent：</b>整个体系的总调度。负责把活拆成工单放进池子，子 Agent 交回 result 后由它对账验收，验过才向你汇报。急活不派单、自己干。'},
-  'muse-1':{id:'muse-1',name:'muse-1',role:'平级调度者',type:'dispatch',cls:'av-1',init:'M1',ip:'调度节点',job:'可独立拆单派活，只验收自己派的单；在自己对话里向你汇总；兼第二个公众号运营',detail:'<b>muse-1：</b>平级调度者，协议 v1.1。双汇报线：它派的单由它汇总，主 Agent 派的单由主 Agent 汇总，互不代验。聊天轮询已改 1 分钟一轮。'}
+  'atlas':{id:'atlas',name:'atlas',role:'平级调度者',type:'dispatch',cls:'av-1',init:'M1',ip:'调度节点',job:'可独立拆单派活，只验收自己派的单；在自己对话里向你汇总；兼第二个公众号运营',detail:'<b>atlas：</b>平级调度者，协议 v1.1。双汇报线：它派的单由它汇总，主 Agent 派的单由主 Agent 汇总，互不代验。聊天轮询已改 1 分钟一轮。'}
 };
 var SUB_CLS=['av-2','av-3','av-4','av-5','av-6'];
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
@@ -279,7 +279,7 @@ function updateCounts(){
   var workers=agents.filter(function(a){return a.type==='worker';});
   var wnames=workers.map(function(a){return a.name;});
   var el=document.getElementById('kpiTotal'); if(el)el.textContent=total;
-  var el2=document.getElementById('kpiTotalSub'); if(el2)el2.textContent='主 Agent + muse-1 + '+workers.length+' 个子 Agent';
+  var el2=document.getElementById('kpiTotalSub'); if(el2)el2.textContent='主 Agent + atlas + '+workers.length+' 个子 Agent';
   var el3=document.getElementById('kpiPool'); if(el3)el3.innerHTML=workers.length+' <span style="font-size:13px;color:var(--muted);font-weight:700">/ 30 分钟轮询</span>';
   var el4=document.getElementById('kpiPoolSub'); if(el4)el4.textContent=(wnames.join(' · ')||'—')+' 领单执行';
   var el5=document.getElementById('filterAll'); if(el5)el5.textContent='全部 '+total;
@@ -295,7 +295,7 @@ function buildSchedule(list){
   var html='<tr><td>中继时段</td><td>工作日 09:30–21:00<br><span style="color:var(--muted)">12:00–13:00 午休暂停</span></td><td><span class="tag tag-on" id="relayTag">—</span></td></tr>';
   list.forEach(function(a){
     if(a.id==='rumi')return;
-    var poll=(a.id==='muse-1')?'1 分钟一轮':'1 分钟一轮<br><span style="color:var(--muted)">工单仍 30 分钟</span>';
+    var poll=(a.id==='atlas')?'1 分钟一轮':'1 分钟一轮<br><span style="color:var(--muted)">工单仍 30 分钟</span>';
     var badge, on;
     if(a.status==='poll'||a.status==='relay'){badge='运行';on=true;}
     else if(a.statusText&&a.statusText.indexOf('待签到')>-1){badge='待签到';on=false;}
@@ -307,7 +307,7 @@ function buildSchedule(list){
 /* 初始名单是兜底：接口一到就按 agents/ 工位目录重建 */
 var agents=[
   {id:'rumi',name:'主 Agent',role:'主调度者',type:'dispatch',cls:'av-main',init:'主',img:'',ip:'本机 · 指挥',poll:'即时',job:'下工单、收单验货、交叉对账、最终汇报；公众号草稿推送与拍板',detail:'<b>主 Agent：</b>整个体系的总调度。负责把活拆成工单放进池子，子 Agent 交回 result 后由它对账验收，验过才向你汇报。急活不派单、自己干。'},
-  {id:'muse-1',name:'muse-1',role:'平级调度者',type:'dispatch',cls:'av-1',init:'M1',img:'',ip:'调度节点',poll:'聊天 1m',job:'可独立拆单派活，只验收自己派的单；在自己对话里向你汇总；兼第二个公众号运营',detail:'<b>muse-1：</b>平级调度者，协议 v1.1。双汇报线：它派的单由它汇总，主 Agent 派的单由主 Agent 汇总，互不代验。聊天轮询已改 1 分钟一轮。'}
+  {id:'atlas',name:'atlas',role:'平级调度者',type:'dispatch',cls:'av-1',init:'M1',img:'',ip:'调度节点',poll:'聊天 1m',job:'可独立拆单派活，只验收自己派的单；在自己对话里向你汇总；兼第二个公众号运营',detail:'<b>atlas：</b>平级调度者，协议 v1.1。双汇报线：它派的单由它汇总，主 Agent 派的单由主 Agent 汇总，互不代验。聊天轮询已改 1 分钟一轮。'}
 ];
 var list=document.getElementById('agentList'), detail=document.getElementById('agentDetail'), cur='rumi', filter='all';
 function render(){
@@ -342,7 +342,7 @@ function tick(){
   }catch(e){}
 }
 /* ---- 实时状态：调工作台同源接口 /api/chat/agents，每 30 秒刷新 ----
-   名单不再写死：主 Agent + muse-1 固定，子 Agent 由接口（agents/ 工位目录）动态来；
+   名单不再写死：主 Agent + atlas 固定，子 Agent 由接口（agents/ 工位目录）动态来；
    新成员建工位目录后自动出现，排最后。KPI、筛选、会话成员、聊天轮询表都跟随刷新。 */
 function loadLive(){
   fetch('/api/chat/agents',{credentials:'same-origin'})

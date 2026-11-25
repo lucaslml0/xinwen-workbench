@@ -131,7 +131,7 @@
     </div>
     <div class="analogy">
       <div class="ic" aria-hidden="true">🏢</div>
-      <p><b>打个比方：整套系统是一家小公司。</b>盒子是<b>办公室</b>，CasaOS 是<b>前台大屏和门禁</b>；Tailscale 是只发给自己人的<b>内部专线</b>，零讯是对外营业的<b>正门</b>；Rumi 是<b>店长</b>，muse-1 是<b>副店长</b>，<span class="staffList">muse-2、muse-3、muse-4</span> 是<b><span class="staffCount">三</span>位员工</b>。你，就是老板。</p>
+      <p><b>打个比方：整套系统是一家小公司。</b>盒子是<b>办公室</b>，CasaOS 是<b>前台大屏和门禁</b>；Tailscale 是只发给自己人的<b>内部专线</b>，零讯是对外营业的<b>正门</b>；Rumi 是<b>店长</b>，atlas 是<b>副店长</b>，<span class="staffList">muse-2、muse-3、muse-4</span> 是<b><span class="staffCount">三</span>位员工</b>。你，就是老板。</p>
     </div>
   </header>
 
@@ -167,7 +167,7 @@
       </div>
       <div class="d-row" id="agentNodes">
         <button type="button" class="node" data-key="muse"><span class="emoji" aria-hidden="true">🧭</span><span class="t">muse</span><span class="s">主 Agent · 总调度（店长）</span></button>
-        <button type="button" class="node" data-key="muse1"><span class="emoji" aria-hidden="true">🧑‍💼</span><span class="t">muse-1</span><span class="s">平级调度者（副店长）</span></button>
+        <button type="button" class="node" data-key="muse1"><span class="emoji" aria-hidden="true">🧑‍💼</span><span class="t">atlas</span><span class="s">平级调度者（副店长）</span></button>
         <button type="button" class="node" data-key="muse2"><span class="emoji" aria-hidden="true">🔧</span><span class="t">muse-2</span><span class="s">子 Agent · 干活的</span></button>
         <button type="button" class="node" data-key="muse3"><span class="emoji" aria-hidden="true">🔧</span><span class="t">muse-3</span><span class="s">子 Agent · 干活的</span></button>
         <button type="button" class="node" data-key="muse4"><span class="emoji" aria-hidden="true">🔧</span><span class="t">muse-4</span><span class="s">子 Agent（后加入）</span></button>
@@ -193,7 +193,7 @@
         </div>
         <div class="flow" id="f2" role="tabpanel" hidden>
           <div class="steps">
-            <div class="step"><div class="n">1</div><p><b>你把事交给店长</b>——比如“调研一批选题”，主 Agent（或 muse-1）判断适合并行外包，就拆成一张张工单。</p></div>
+            <div class="step"><div class="n">1</div><p><b>你把事交给店长</b>——比如“调研一批选题”，主 Agent（或 atlas）判断适合并行外包，就拆成一张张工单。</p></div>
             <div class="step"><div class="n">2</div><p><b>工单进池</b>——写进盒子上的工单池 <code>/opt/shared/agent-bus/</code>，带调度者前缀标记（协议 v1.1，T / X 防撞），谁派的单一目了然。</p></div>
             <div class="step"><div class="n">3</div><p><b>员工轮询领单</b>——<span class="staffList">muse-2、muse-3、muse-4</span> 每 <b>30 分钟</b>来看一次，领走自己的单开干；没单就安静待命，不乱动仓库。</p></div>
             <div class="step"><div class="n">4</div><p><b>结果写回 + 验收</b>——result 写回池子，派单的调度者亲自交叉对账，验过才向你汇报；员工说“干完了”不算数。</p></div>
@@ -249,7 +249,7 @@
     tailscale:{t:"Tailscale · 内部专线", d:"给自家设备拉的一张只有自己人能进的局域网，不管人离多远都像在同一个屋里。盒子和 muse-2 / 3 / 4 都在网里，用 100.x 开头的内部地址互相直连：子 Agent 传工单、你进 CasaOS 后台，走的都是这条线，外人连门都看不见。盒子的安全加固也建立在它之上——只认专线内的密钥登录，密码登录已关。成员门牌：muse-2 是 100.x.x.x，muse-3 是 100.x.x.x，muse-4 是 100.x.x.x。"},
     lingxun:  {t:"零讯 · 对外正门", d:"家里宽带没有固定公网地址，零讯相当于给盒子租了个“对外接待窗口”：你在外面不用开任何专线，点链接就能打开工作台，请求被转进盒子。它是主地址、最稳定；另有一条 Cloudflare 临时隧道当备胎，速度更快但重启就换地址。工作台和粉丝系统现在共用这一扇正门（粉丝系统走工作台里的 /fansapp/ 路径），腾出来的另一条隧道给了产品官网。正门地址：https://你的隧道地址/ ——只通工作台，不通 CasaOS 后台。"},
     muse:     {t:"muse · 主 Agent（店长）", d:"你平时直接对话的这位就是店长本人：接你的话、做判断、派活、验收、最后向你汇报。它统筹公众号、抖音、视频号等日常事务，需要人手时把活拆成工单扔进工单池；子 Agent 干完的活必须经它交叉对账验收，才算数、才向你汇报。红线也归它守：发布、花钱、对外发消息这类动作子 Agent 一律不许碰，只能它来、且要你拍板。在工作台聊天页左侧栏里排第一位的就是它，聊天约 1 分钟回一轮。"},
-    muse1:    {t:"muse-1 · 平级调度者（副店长）", d:"不是下属，是另一位能独立带队的店长，拍板定为与主 Agent 平级。它也能拆单、往工单池派活；两人用工单号前缀区分地盘（协议 v1.1，T / X 前缀防撞），各自只验收自己派的单，互不越界。它同时保留一份运营职责，负责第二个公众号的备稿线。聊天轮询和主 Agent 一样，已改成约 1 分钟取一次。派活时别把它和 muse-2 / 3 / 4 混为一谈——它不是子 Agent 池成员。"},
+    muse1:    {t:"atlas · 平级调度者（副店长）", d:"不是下属，是另一位能独立带队的店长，拍板定为与主 Agent 平级。它也能拆单、往工单池派活；两人用工单号前缀区分地盘（协议 v1.1，T / X 前缀防撞），各自只验收自己派的单，互不越界。它同时保留一份运营职责，负责第二个公众号的备稿线。聊天轮询和主 Agent 一样，已改成约 1 分钟取一次。派活时别把它和 muse-2 / 3 / 4 混为一谈——它不是子 Agent 池成员。"},
     muse2:    {t:"muse-2 · 子 Agent（员工）", d:"只干活、不拿主意的一位，适合并行调研、批量体力活、流水线分段和双人复核。每 30 分钟去工单池领一次单，干完把结果（result）写回池子等验收；工作台聊天约 1 分钟回一轮。它有自己独立的 Gitee 令牌，读写都实测过；没工单时不许乱动仓库。三条红线：不发布、不代发消息、不花钱。Tailscale 地址 100.x.x.x。"},
     muse3:    {t:"muse-3 · 子 Agent（员工）", d:"职责和 muse-2 相同：每 30 分钟轮询工单池领单执行，结果写回等调度者验收；聊天约 1 分钟一轮；有独立 Gitee 令牌。三条红线一样：不发布、不代发消息、不花钱。因为工单全程留痕，哪一步卡住、卡了多久一翻记录就知道——比如某次验证单迟迟不回，就是靠工单池发现卡在连接确认上的。Tailscale 地址 100.x.x.x。"},
     muse4:    {t:"muse-4 · 子 Agent（员工）", d:"后入职的最新一位，职责同上：30 分钟轮询领工单、干完写回结果、等派单的调度者验收，红线同样是不发布、不代发、不花钱。它的 1 分钟聊天轮询建好后，聊天也是约 1 分钟回一轮。Tailscale 地址 100.x.x.x。"}
@@ -278,7 +278,7 @@
       .then(function(r){return r.json();})
       .then(function(d){
         if(!d||!d.ok||!Array.isArray(d.agents))return;
-        var subs=d.agents.filter(function(a){return a.id!=='rumi'&&a.id!=='muse-1';});
+        var subs=d.agents.filter(function(a){return a.id!=='rumi'&&a.id!=='atlas';});
         var total=d.agents.length;
         document.querySelectorAll('.agentCount').forEach(function(el){el.textContent=total;});
         var listTxt=subs.map(function(a){return a.name;}).join('、')||'—';
@@ -286,8 +286,8 @@
         document.querySelectorAll('.staffCount').forEach(function(el){el.textContent=CN[subs.length]||subs.length;});
         var row=document.getElementById('agentNodes');
         if(row){
-          var emojis={rumi:'🧭','muse-1':'🧑‍💼'};
-          var subsTxt={rumi:'主 Agent · 总调度（店长）','muse-1':'平级调度者（副店长）'};
+          var emojis={rumi:'🧭','atlas':'🧑‍💼'};
+          var subsTxt={rumi:'主 Agent · 总调度（店长）','atlas':'平级调度者（副店长）'};
           var html='';
           d.agents.forEach(function(a){
             var em=emojis[a.id]||'🔧';
@@ -300,7 +300,7 @@
           nodes.forEach(function(n){n.addEventListener('click',function(){show(n.getAttribute('data-key'));});});
         }
         details['rumi']={t:'Rumi · 主 Agent（店长）',d:'你平时直接对话的这位就是店长本人：接你的话、做判断、派活、验收、最后向你汇报。它统筹公众号、抖音、视频号等日常事务，需要人手时把活拆成工单扔进工单池；子 Agent 干完的活必须经它交叉对账验收，才算数、才向你汇报。红线也归它守：发布、花钱、对外发消息这类动作子 Agent 一律不许碰，只能它来、且要你拍板。在工作台聊天页左侧栏里排第一位的就是它，聊天约 1 分钟回一轮。'};
-        details['muse-1']=details['muse1'];
+        details['atlas']=details['muse1'];
         subs.forEach(function(a){
           details[a.id]={t:a.name+' · 子 Agent（员工）',d:'职责：每 30 分钟轮询工单池领单执行，结果写回等调度者验收；聊天约 1 分钟一轮；三条红线：不发布、不代发消息、不花钱。Tailscale 地址 '+(a.tailnet||'待补充')+'。当前状态：'+(a.statusText||'—')+'。'};
         });

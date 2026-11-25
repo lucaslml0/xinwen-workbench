@@ -61,13 +61,13 @@ CHAT_DIR = os.environ.get("WB_CHAT_DIR", os.path.join(BASE, "chat"))  # Agent �
 CHAT_HISTORY_DIR = os.path.join(CHAT_DIR, "history")
 CHAT_LOCK = os.path.join(CHAT_DIR, "history.lock")
 # Agent 名单：(id, 显示名, 首字母, 头像 class, 职责说明)
-# 主 Agent（rumi）与平级调度者（muse-1）固定；子 Agent 从 agents/ 工位子文件夹动态读，
+# 主 Agent（rumi）与平级调度者（atlas）固定；子 Agent 从 agents/ 工位子文件夹动态读，
 # 每个子文件夹一个子 Agent，按目录创建时间排（先建的在前，新成员排最后）。
 # 新成员到岗只需建 agents/<id>/（status.json + quota.json + heartbeat.json），
 # 聊天列表、指挥中心、原理页三处自动出现，不用再改代码。
 FIXED_CHAT_AGENTS = [
     ("rumi", "Rumi", "R", "rumi", "主 Agent · 拆单、验收、汇报"),
-    ("muse-1", "muse-1", "1", "m1", "平级调度者"),
+    ("atlas", "atlas", "A", "m1", "平级调度者"),
 ]
 BUS_DIR = os.environ.get("WB_BUS_DIR", os.path.join(BASE, "agent-bus"))  # 子 Agent 状态目录（工单池状态文件放这里）
 
@@ -85,8 +85,11 @@ def scan_sub_agents():
         names = os.listdir(base)
     except Exception:
         names = []
+    fixed_ids = {a[0] for a in FIXED_CHAT_AGENTS}
     dirs = []
     for n in names:
+        if n in fixed_ids:
+            continue
         p = os.path.join(base, n)
         try:
             if os.path.isdir(p):
@@ -611,7 +614,7 @@ def chat_agent_status():
     # per-agent quota files: each sub-agent writes its own workspace file
     # /opt/shared/agent-bus/agents/<aid>/quota.json ; present + valid wins
     bus_agents = os.path.join(BUS_DIR, "agents")
-    for _aid in ["muse-1"] + [s["id"] for s in scan_sub_agents()]:
+    for _aid in ["atlas"] + [s["id"] for s in scan_sub_agents()]:
         try:
             with open(os.path.join(bus_agents, _aid, "quota.json"), encoding="utf-8") as f:
                 _q = json.load(f)
@@ -626,11 +629,11 @@ def chat_agent_status():
         status, status_text = "poll", "轮询模式 · 约 1 分钟取一次"
         if aid == "Lei":
             status, status_text = "relay", "中继模式 · 约 1 分钟回一次"
-        elif aid == "muse-1":
-            # muse-1 是平级调度者，不跑轮询心跳；以它是否在收件箱回过消息判断是否已接入
+        elif aid == "atlas":
+            # atlas 是平级调度者，不跑轮询心跳；以它是否在收件箱回过消息判断是否已接入
             # （回过 = 已按邀请建了自己的轮询；最近一条用户消息若超过 30 分钟没回，认为可能离线）
             msgs_m1 = chat_load(aid)
-            replied = any(m.get("from") == "muse-1" for m in msgs_m1)
+            replied = any(m.get("from") == "atlas" for m in msgs_m1)
             unreplied_old = bool(
                 msgs_m1
                 and msgs_m1[-1].get("from") == "user"
@@ -692,7 +695,7 @@ def chat_agent_status():
 
         out.append({"id": aid, "name": name, "initial": initial, "cls": cls,
                     "img": "/avatar-" + aid + ".png?v=5",
-                    "video": "/avatar-" + aid + ".mp4?v=4" if aid in ("muse", "muse-1", "muse-2", "muse-3", "muse-4") else "",
+                    "video": "/avatar-" + aid + ".mp4?v=4" if aid in ("muse", "atlas", "muse-2", "muse-3", "muse-4") else "",
                     "quota": qp, "quotaAsOf": qa, "quotaReset": qr, "quotaTokens": qt,
                     "hasAvatar": os.path.exists(os.path.join(BASE, "avatar-" + aid + ".png")),
                     "role": role, "status": status, "statusText": status_text,
@@ -2615,7 +2618,7 @@ def render_shell(data, mode, group, section_id, view, force_wx=False, acct="main
 
     if mode == "chat":
         # B区与D区都展示 web 聊天：整幅内嵌聊天页，不显示左栏
-        main = (f'<div class="d-head"><h2>💬 Agent 聊天</h2><span class="sub">web 聊天，与 Lei / muse-1 / muse-2 / muse-3 / muse-4 对话</span></div>'
+        main = (f'<div class="d-head"><h2>💬 Agent 聊天</h2><span class="sub">web 聊天，与 Lei / atlas / muse-2 / muse-3 / muse-4 对话</span></div>'
                 f'<iframe class="embed-frame" src="/chat" title="Agent 聊天"></iframe>'
                 f'<div class="embed-note">聊天页打不开时，<a href="/chat" target="_blank" rel="noopener">在新窗口打开 →</a></div>')
         shell_cls = "shell no-side chat-mode"
@@ -3301,7 +3304,7 @@ class Handler(BaseHTTPRequestHandler):
             self.wfile.write(img)
             return
         if u.path.startswith("/avatar-") and u.path.endswith(".png"):
-            allowed = ("avatar-rumi.png", "avatar-Lei.png", "avatar-muse.png", "avatar-muse-1.png", "avatar-muse-2.png", "avatar-muse-3.png", "avatar-muse-4.png")
+            allowed = ("avatar-rumi.png", "avatar-Lei.png", "avatar-muse.png", "avatar-atlas.png", "avatar-muse-2.png", "avatar-muse-3.png", "avatar-muse-4.png")
             fn = u.path[1:]
             if fn not in allowed:
                 self.send_json({"ok": False, "msg": "not found"}, 404); return
@@ -3318,7 +3321,7 @@ class Handler(BaseHTTPRequestHandler):
             self.wfile.write(img)
             return
         if u.path.startswith("/avatar-") and u.path.endswith(".mp4"):
-            allowed = ("avatar-Lei.mp4", "avatar-muse.mp4", "avatar-muse-1.mp4", "avatar-muse-2.mp4", "avatar-muse-3.mp4", "avatar-muse-4.mp4")
+            allowed = ("avatar-Lei.mp4", "avatar-muse.mp4", "avatar-atlas.mp4", "avatar-muse-2.mp4", "avatar-muse-3.mp4", "avatar-muse-4.mp4")
             fn = u.path[1:]
             if fn not in allowed:
                 self.send_json({"ok": False, "msg": "not found"}, 404); return
