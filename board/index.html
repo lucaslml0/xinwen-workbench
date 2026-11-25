@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>任务看板 · 我的个人工作台</title>
+<style>
+:root{--bg:#f4f4f5;--card:#fff;--line:#e4e4e7;--ink:#18181b;--muted:#71717a;--accent:#0f766e;--accent-soft:#f0fdfa;--amber:#b45309;--amber-bg:#fef3c7;--blue:#0369a1;--blue-bg:#e0f2fe;--green:#15803d;--green-bg:#dcfce7;--gray-bg:#f4f4f5}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--ink);font-size:15px;line-height:1.5}
+.wrap{max-width:1180px;margin:0 auto;padding:16px}
+header{display:flex;flex-wrap:wrap;gap:8px;align-items:baseline}
+h1{font-size:20px;margin:0}
+.sub{color:var(--muted);font-size:13px}
+.links{margin-left:auto;font-size:13px}
+.links a{color:var(--accent);text-decoration:none;margin-left:12px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0}
+.chip{background:var(--card);border:1px solid var(--line);border-radius:999px;padding:4px 12px;font-size:13px}
+.chip b{font-size:14px}
+.chip.warn{border-color:#fcd34d;background:var(--amber-bg)}
+.chip.run{border-color:#7dd3fc;background:var(--blue-bg)}
+.chip.done{border-color:#86efac;background:var(--green-bg)}
+h2{font-size:16px;margin:20px 0 10px}
+.agents{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
+.acard{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.acard .top{display:flex;gap:10px;align-items:center}
+.avatar{width:40px;height:40px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0;position:relative;overflow:hidden}
+.avatar img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.acard .name{font-weight:700}
+.acard .role{color:var(--muted);font-size:12px}
+.dot{width:8px;height:8px;border-radius:50%;background:#a1a1aa;display:inline-block;margin-left:6px;vertical-align:middle}
+.dot.online{background:#16a34a}
+.dot.relay{background:#0ea5e9}
+.meta{color:var(--muted);font-size:12px;margin-top:8px}
+.meta b{color:var(--ink);font-weight:600}
+.tasks{margin-top:6px;display:flex;flex-wrap:wrap;gap:6px}
+.ttag{font-size:12px;border-radius:999px;padding:2px 8px;border:1px solid var(--line);background:var(--gray-bg);cursor:pointer}
+.ttag.run{border-color:#7dd3fc;background:var(--blue-bg)}
+.ttag.done{border-color:#86efac;background:var(--green-bg)}
+.ttag.queued{border-color:#fcd34d;background:var(--amber-bg)}
+.notask{color:var(--muted);font-size:13px;margin-top:6px}
+.cols{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;align-items:start}
+.col h3{font-size:14px;margin:0 0 8px}
+.col h3 .n{color:var(--muted);font-weight:600}
+.tcard{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:10px;cursor:pointer}
+.tcard:hover{border-color:var(--accent)}
+.tcard.sel{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}
+.tcard .tid{font-size:12px;color:var(--muted)}
+.tcard .ttl{font-weight:700;margin:2px 0}
+.tcard .who{font-size:13px;color:var(--muted)}
+.tcard .prev{font-size:13px;color:var(--muted);margin-top:6px;white-space:pre-wrap;word-break:break-word}
+.st{display:inline-block;font-size:12px;border-radius:999px;padding:1px 8px;margin-left:6px;vertical-align:middle}
+.st.queued{background:var(--amber-bg);color:var(--amber)}
+.st.doing{background:var(--blue-bg);color:var(--blue)}
+.st.done{background:var(--green-bg);color:var(--green)}
+.empty{color:var(--muted);font-size:13px;background:var(--card);border:1px dashed var(--line);border-radius:12px;padding:16px;text-align:center}
+#detail{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-top:18px;display:none}
+#detail.show{display:block}
+#detail h3{margin:0 0 4px}
+#detail .dmeta{color:var(--muted);font-size:13px;margin-bottom:10px}
+#detail pre{background:var(--gray-bg);border-radius:8px;padding:10px 12px;white-space:pre-wrap;word-break:break-word;font-size:13px;line-height:1.6;margin:8px 0;max-height:320px;overflow:auto}
+#detail h4{margin:12px 0 4px;font-size:14px}
+.foot{color:var(--muted);font-size:12px;margin:18px 0 8px}
+#err{color:#b91c1c;font-size:13px;display:none;margin:10px 0}
+@media(max-width:700px){
+  .wrap{padding:12px}
+  .cols{grid-template-columns:1fr}
+  .agents{grid-template-columns:1fr}
+  h1{font-size:18px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>📋 任务看板</h1>
+    <span class="sub">子 Agent 任务执行与进度 · 数据来自工单池文件</span>
+    <span class="links"><a href="/command-center/" target="_blank" rel="noopener">指挥中心 →</a><a href="/chat" target="_blank" rel="noopener">聊天 →</a></span>
+  </header>
+  <div class="chips" id="chips"></div>
+  <div id="err"></div>
+  <h2>Agent 进度</h2>
+  <div class="agents" id="agents"></div>
+  <h2>工单</h2>
+  <div class="cols" id="cols"></div>
+  <div id="detail"></div>
+  <div class="foot">数据来源：/opt/shared/agent-bus/tasks/（task.md + result.md）与 /api/chat/agents · 每 30 秒自动刷新 · 点工单卡片看全文，点 Agent 卡片进聊天</div>
+</div>
+<script>
+(function(){
+"use strict";
+function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];});}
+function fmtTs(ts){if(!ts)return"—";var d=new Date(ts*1000);return ("0"+(d.getMonth()+1)).slice(-2)+"-"+("0"+d.getDate()).slice(-2)+" "+("0"+d.getHours()).slice(-2)+":"+("0"+d.getMinutes()).slice(-2);}
+function api(p){return fetch(p,{credentials:"same-origin"}).then(function(r){if(r.status===401)throw new Error("unauthorized");return r.json();});}
+var agents=[], tasks=[], selId=null;
+var ST_LABEL={queued:"待领取",doing:"进行中",done:"已完成"};
+var ST_CLS={queued:"queued",doing:"doing",done:"done"};
+function showErr(t){var e=document.getElementById("err");e.style.display=t?"block":"none";e.textContent=t||"";}
+function agentTasks(a){
+  return tasks.filter(function(t){
+    // 认领者常写作 "Juno（子 Agent）"，匹配时去掉括号后缀
+    var an=(t.assignee||"").trim().split(/[(（]/)[0].trim();
+    return an && (an===a.name || an.toLowerCase()===a.id.toLowerCase());
+  });
+}
+function render(){
+  var online=agents.filter(function(a){return a.status==="poll"||a.status==="relay";}).length;
+  var q=tasks.filter(function(t){return t.status==="queued";}).length;
+  var d=tasks.filter(function(t){return t.status==="doing";}).length;
+  var f=tasks.filter(function(t){return t.status==="done";}).length;
+  document.getElementById("chips").innerHTML=
+    '<span class="chip">工单 <b>'+tasks.length+'</b></span>'+
+    '<span class="chip warn">待领取 <b>'+q+'</b></span>'+
+    '<span class="chip run">进行中 <b>'+d+'</b></span>'+
+    '<span class="chip done">已完成 <b>'+f+'</b></span>'+
+    '<span class="chip">Agent 在线 <b>'+online+' / '+agents.length+'</b></span>';
+  var al=document.getElementById("agents");al.innerHTML="";
+  if(!agents.length)al.innerHTML='<div class="empty">暂无 Agent</div>';
+  agents.forEach(function(a){
+    var on=a.status==="poll"||a.status==="relay";
+    var ts=agentTasks(a);
+    var quota=(a.quota!=null)?("免费额度 "+a.quota+"%"+(a.quotaReset?" · "+a.quotaReset+"重置":"")+(a.quotaTokens!=null?" · 附加词元剩 "+a.quotaTokens:"")):"额度未上报";
+    var card=document.createElement("div");card.className="acard";
+    var th='<div class="top"><div class="avatar">'+(a.hasAvatar&&a.img?'<img src="'+esc(a.img)+'" alt="" onerror="this.remove()">':'')+esc(a.initial||a.name.slice(0,1))+'</div><div><div class="name">'+esc(a.name)+'<span class="dot '+(on?(a.status==="relay"?"relay":"online"):"")+'"></span></div><div class="role">'+esc(a.role||"")+'</div></div></div>'+
+      '<div class="meta">'+esc(a.statusText||"")+'<br>尾网 <b>'+esc(a.tailnet||"待补充")+'</b> · '+esc(quota)+'</div>';
+    if(ts.length){
+      th+='<div class="tasks">'+ts.map(function(t){
+        return '<span class="ttag '+ST_CLS[t.status]+'" data-tid="'+esc(t.id)+'">'+esc(t.id)+' · '+esc(t.title)+'</span>';
+      }).join("")+'</div>';
+    }else{
+      th+='<div class="notask">暂无任务</div>';
+    }
+    card.innerHTML=th;
+    card.style.cursor="pointer";
+    card.onclick=function(){window.open("/chat?agent="+encodeURIComponent(a.id),"_blank","noopener");};
+    card.querySelectorAll(".ttag").forEach(function(el){
+      el.onclick=function(ev){ev.stopPropagation();selectTask(el.getAttribute("data-tid"));};
+    });
+    al.appendChild(card);
+  });
+  var cols=document.getElementById("cols");cols.innerHTML="";
+  [["queued","待领取"],["doing","进行中"],["done","已完成"]].forEach(function(pair){
+    var key=pair[0], label=pair[1];
+    var list=tasks.filter(function(t){return t.status===key;});
+    var col=document.createElement("div");col.className="col";
+    var html='<h3>'+label+' <span class="n">'+list.length+'</span></h3>';
+    if(!list.length)html+='<div class="empty">暂无</div>';
+    list.forEach(function(t){
+      html+='<div class="tcard'+(selId===t.id?" sel":"")+'" data-tid="'+esc(t.id)+'">'+
+        '<div class="tid">'+esc(t.id)+'<span class="st '+ST_CLS[t.status]+'">'+esc(t.statusLabel||ST_LABEL[t.status]||t.status)+'</span></div>'+
+        '<div class="ttl">'+esc(t.title)+'</div>'+
+        '<div class="who">认领：'+esc(t.assignee||"未认领")+(t.claimed_at?" · "+esc(t.claimed_at):"")+'<br>更新：'+fmtTs(t.updatedTs)+'</div>'+
+        (t.resultPreview?'<div class="prev">'+esc(t.resultPreview)+'</div>':"")+
+        '</div>';
+    });
+    col.innerHTML=html;
+    col.querySelectorAll(".tcard").forEach(function(el){
+      el.onclick=function(){selectTask(el.getAttribute("data-tid"));};
+    });
+    cols.appendChild(col);
+  });
+  renderDetail();
+}
+function renderDetail(){
+  var box=document.getElementById("detail");
+  var t=tasks.find(function(x){return x.id===selId;});
+  if(!t){box.className="";box.innerHTML="";return;}
+  box.className="show";
+  box.innerHTML='<h3>'+esc(t.id)+' · '+esc(t.title)+'</h3>'+
+    '<div class="dmeta">认领：'+esc(t.assignee||"未认领")+(t.claimed_at?" · "+esc(t.claimed_at):"")+' · 状态：'+esc(t.statusLabel||t.status)+(t.resultStatus?"（结果："+esc(t.resultStatus)+"）":"")+' · 更新：'+fmtTs(t.updatedTs)+'</div>'+
+    '<h4>task.md</h4><pre>'+esc(t.taskMd||"(空)")+'</pre>'+
+    '<h4>result.md</h4><pre>'+esc(t.resultMd||"(空)")+'</pre>';
+}
+function selectTask(id){
+  selId=id;render();
+  var box=document.getElementById("detail");
+  if(box)box.scrollIntoView({behavior:"smooth",block:"start"});
+}
+function load(){
+  return Promise.all([api("/api/chat/agents"),api("/api/tasks")]).then(function(res){
+    if(!res[0].ok)throw new Error(res[0].msg||"加载 Agent 失败");
+    if(!res[1].ok)throw new Error(res[1].msg||"加载工单失败");
+    agents=res[0].agents||[];
+    tasks=res[1].tasks||[];
+    showErr("");
+    render();
+  }).catch(function(e){
+    showErr(String(e.message||e)==="unauthorized"?"未登录，请先在首页登录，再打开看板。":String(e.message||e));
+  });
+}
+load();
+setInterval(load,30000);
+})();
+</script>
+</body>
+</html>

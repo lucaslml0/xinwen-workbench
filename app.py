@@ -602,6 +602,101 @@ def chat_watch_start():
     t = threading.Thread(target=_chat_watch_loop, daemon=True, name="chat-watch")
     t.start()
 
+def tasks_api():
+    """工单看板数据：读 BUS_DIR/tasks/*/task.md + result.md。"""
+    tasks_dir = os.path.join(BUS_DIR, "tasks")
+    out = []
+    try:
+        names = sorted(os.listdir(tasks_dir), reverse=True)
+    except Exception:
+        names = []
+    status_label = {"queued": "待领取", "doing": "进行中", "done": "已完成",
+                    "待领取": "待领取", "进行中": "进行中", "已完成": "已完成"}
+    for n in names:
+        d = os.path.join(tasks_dir, n)
+        if not os.path.isdir(d):
+            continue
+        task_path = os.path.join(d, "task.md")
+        result_path = os.path.join(d, "result.md")
+        title = ""
+        assignee = ""
+        claimed_at = ""
+        status = "queued"
+        source = ""
+        task_text = ""
+        try:
+            with open(task_path, encoding="utf-8") as f:
+                tlines = f.read().splitlines()
+        except Exception:
+            tlines = []
+        section = ""
+        for ln in tlines:
+            s = ln.strip()
+            if s.startswith("# "):
+                title = s[2:].strip()
+            elif s.startswith("## "):
+                section = s[3:].strip()
+            elif s.startswith("- ") and "：" in s:
+                k, v = s[2:].split("：", 1)
+                k = k.strip(); v = v.strip()
+                if k == "认领者":
+                    assignee = v
+                elif k == "认领时间":
+                    claimed_at = v
+                elif k == "状态":
+                    status = v
+                elif k == "来源":
+                    source = v
+            elif section == "任务" and s and not task_text:
+                task_text = s
+        if not title:
+            title = n
+        tid = n
+        if "：" in title and title.split("：", 1)[0].strip().startswith("T"):
+            tid, title = title.split("：", 1)
+            tid = tid.strip(); title = title.strip()
+        result_text = ""
+        result_status = ""
+        try:
+            with open(result_path, encoding="utf-8") as f:
+                result_text = f.read()
+        except Exception:
+            result_text = ""
+        for ln in result_text.splitlines():
+            s = ln.strip()
+            if s.startswith("- ") and "：" in s:
+                k, v = s[2:].split("：", 1)
+                if k.strip() == "状态":
+                    result_status = v.strip()
+        preview_lines = []
+        for ln in result_text.splitlines():
+            s = ln.strip()
+            if not s or s.startswith("#"):
+                continue
+            if s.startswith("- ") and "：" in s and s[2:].split("：", 1)[0].strip() in ("状态", "认领者", "认领时间"):
+                continue
+            preview_lines.append(s)
+            if len(preview_lines) >= 2:
+                break
+        try:
+            created_ts = int(os.path.getmtime(task_path))
+        except Exception:
+            created_ts = 0
+        try:
+            updated_ts = int(max(os.path.getmtime(task_path), os.path.getmtime(result_path)))
+        except Exception:
+            updated_ts = created_ts
+        out.append({
+            "id": tid, "title": title, "assignee": assignee, "claimed_at": claimed_at,
+            "status": status, "statusLabel": status_label.get(status, status),
+            "resultStatus": result_status, "source": source, "task": task_text,
+            "resultPreview": " / ".join(preview_lines)[:200],
+            "hasResult": bool(result_text.strip()),
+            "taskMd": "\n".join(tlines), "resultMd": result_text,
+            "createdTs": created_ts, "updatedTs": updated_ts,
+        })
+    return out
+
 def chat_agent_status():
     out = []
     now = time.time()
@@ -1981,6 +2076,7 @@ def page_foot():
             '<a href="/?mode=fans">👥<span>粉丝</span></a>'
             '<a href="/?mode=chat">💬<span>聊天</span></a>'
             '<a href="/?mode=command">🎛️<span>指挥</span></a>'
+            '<a href="/?mode=board">📋<span>看板</span></a>'
             '<a href="/?mode=principle">📖<span>原理</span></a>'
             '<a href="/?mode=work">💼<span>工作</span></a>'
             '</div></div></body></html>')
@@ -2605,6 +2701,7 @@ def render_shell(data, mode, group, section_id, view, force_wx=False, acct="main
     c_chat = " on" if mode == "chat" else ""
     c_work = " on" if mode == "work" else ""
     c_command = " on" if mode == "command" else ""
+    c_board = " on" if mode == "board" else ""
     c_principle = " on" if mode == "principle" else ""
     top = (f'<header class="app-top"><div class="app-top-in">'
            f'<button class="side-toggle" id="sideToggle" aria-label="菜单">☰</button>'
@@ -2613,6 +2710,7 @@ def render_shell(data, mode, group, section_id, view, force_wx=False, acct="main
            f'<a href="/?mode=fans&acct={acct}" class="{c_fans.strip()}">👥 粉丝管理</a>'
            f'<a href="/?mode=chat" class="{c_chat.strip()}">💬 Agent聊天</a>'
            f'<a href="/?mode=command" class="{c_command.strip()}">🎛️ 指挥中心</a>'
+           f'<a href="/?mode=board" class="{c_board.strip()}">📋 任务看板</a>'
            f'<a href="/?mode=principle" class="{c_principle.strip()}">📖 工作台原理</a>'
            f'<a href="/?mode=work" class="{c_work.strip()}">💼 工作</a></nav>'
            f'<span class="wx-chip">{wx_chip}</span>'
@@ -2631,6 +2729,14 @@ def render_shell(data, mode, group, section_id, view, force_wx=False, acct="main
         main = (f'<div class="d-head"><h2>🎛️ Agent 指挥中心</h2><span class="sub">Agent 状态 · 工单 · 聊天一屏看全，状态每 30 秒自动刷新</span></div>'
                 f'<iframe class="embed-frame" src="/command-center/" title="Agent 指挥中心"></iframe>'
                 f'<div class="embed-note">指挥中心打不开时，<a href="/command-center/" target="_blank" rel="noopener">在新窗口打开 →</a></div>')
+        shell_cls = "shell no-side chat-mode"
+        side = ""
+        extra_js = ""
+    elif mode == "board":
+        # 任务看板：D区整幅内嵌看板页，不显示左栏；状态由页内 JS 调 /api/tasks 与 /api/chat/agents 每 30 秒刷新
+        main = (f'<div class="d-head"><h2>📋 任务看板</h2><span class="sub">子 Agent 任务执行与进度，数据来自工单池文件，每 30 秒自动刷新</span></div>'
+                f'<iframe class="embed-frame" src="/board/" title="任务看板"></iframe>'
+                f'<div class="embed-note">看板打不开时，<a href="/board/" target="_blank" rel="noopener">在新窗口打开 →</a></div>')
         shell_cls = "shell no-side chat-mode"
         side = ""
         extra_js = ""
@@ -2705,6 +2811,7 @@ def render_shell(data, mode, group, section_id, view, force_wx=False, acct="main
             '<a href="/?mode=fans">👥<span>粉丝</span></a>'
             '<a href="/?mode=chat">💬<span>聊天</span></a>'
             '<a href="/?mode=command">🎛️<span>指挥</span></a>'
+            '<a href="/?mode=board">📋<span>看板</span></a>'
             '<a href="/?mode=principle">📖<span>原理</span></a>'
             '<a href="/?mode=work">💼<span>工作</span></a>'
             '</div></body></html>')
@@ -3100,6 +3207,19 @@ class Handler(BaseHTTPRequestHandler):
             except Exception:
                 self.send_html("<h3>工作台原理页面未部署</h3>", 500)
             return
+        if u.path == "/api/tasks":
+            if not self.authed():
+                self.send_json({"ok": False, "msg": "unauthorized"}, 401); return
+            self.send_json({"ok": True, "tasks": tasks_api()}); return
+        if u.path == "/board" or u.path == "/board/":
+            if not self.authed():
+                self.send_html(login_html(next_url="/board/")); return
+            try:
+                with open(os.path.join(BASE, "board", "index.html"), encoding="utf-8") as f:
+                    self.send_html(f.read())
+            except Exception:
+                self.send_html("<h3>任务看板页面未部署</h3>", 500)
+            return
         if u.path == "/change-password":
             if not self.authed():
                 self.send_html(login_html(next_url="/change-password")); return
@@ -3379,7 +3499,7 @@ class Handler(BaseHTTPRequestHandler):
             period = "daily"
         if q.get("frag"):
             self.send_html(news_content_html(data, group, section)); return
-        if mode not in ("home", "news", "fans", "chat", "work", "command", "principle"):
+        if mode not in ("home", "news", "fans", "chat", "work", "command", "board", "principle"):
             mode = "news" if (section or brief_date) else "home"
         if brief_date:
             mode = "news"; group = "world"; section = "lianbo"
