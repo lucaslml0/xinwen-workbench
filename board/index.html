@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>任务看板 · 我的个人工作台</title>
 <style>
-:root{--bg:#f4f4f5;--card:#fff;--line:#e4e4e7;--ink:#18181b;--muted:#71717a;--accent:#0f766e;--accent-soft:#f0fdfa;--amber:#b45309;--amber-bg:#fef3c7;--blue:#0369a1;--blue-bg:#e0f2fe;--green:#15803d;--green-bg:#dcfce7;--gray-bg:#f4f4f5}
+:root{--bg:#f4f4f5;--card:#fff;--line:#e4e4e7;--ink:#18181b;--muted:#71717a;--accent:#3370ff;--accent-soft:#eef4ff;--amber:#b45309;--amber-bg:#fef3c7;--blue:#0369a1;--blue-bg:#e0f2fe;--green:#15803d;--green-bg:#dcfce7;--gray-bg:#f4f4f5}
 *{box-sizing:border-box}
 html,body{margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--ink);font-size:15px;line-height:1.5}
@@ -50,10 +50,23 @@ h2{font-size:16px;margin:20px 0 10px}
 .tcard .ttl{font-weight:700;margin:2px 0}
 .tcard .who{font-size:13px;color:var(--muted)}
 .tcard .prev{font-size:13px;color:var(--muted);margin-top:6px;white-space:pre-wrap;word-break:break-word}
-.st{display:inline-block;font-size:12px;border-radius:999px;padding:1px 8px;margin-left:6px;vertical-align:middle}
-.st.queued{background:var(--amber-bg);color:var(--amber)}
-.st.doing{background:var(--blue-bg);color:var(--blue)}
-.st.done{background:var(--green-bg);color:var(--green)}
+.st{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:700;margin-left:6px;vertical-align:middle}
+.st i{width:7px;height:7px;border-radius:50%;background:currentColor;display:inline-block}
+.st.queued{color:var(--amber)}
+.st.doing{color:var(--blue)}
+.st.done{color:var(--green)}
+.who2{display:none}
+.mini-av{width:20px;height:20px;border-radius:50%;background:var(--accent);color:#fff;flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700}
+.mini-av.none{background:#d4d4d8;color:var(--muted)}
+.acard .cur,.acard .quota,.acard .go{display:none}
+.tabs{display:none}
+.bottomnav{display:none}
+#sheetBack{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:30;display:none}
+#sheetBack.show{display:block}
+#detail .grab{display:none}
+#detail .dhead{display:flex;align-items:flex-start;gap:8px}
+#detail .dhead h3{flex:1}
+#detail .x{flex:0 0 auto;width:32px;height:32px;border-radius:50%;border:1px solid var(--line);background:var(--card);font-size:16px;cursor:pointer;color:var(--muted)}
 .empty{color:var(--muted);font-size:13px;background:var(--card);border:1px dashed var(--line);border-radius:12px;padding:16px;text-align:center}
 #detail{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-top:18px;display:none}
 #detail.show{display:block}
@@ -81,9 +94,42 @@ h2{font-size:16px;margin:20px 0 10px}
 .foot{color:var(--muted);font-size:12px;margin:18px 0 8px}
 #err{color:#b91c1c;font-size:13px;display:none;margin:10px 0}
 @media(max-width:700px){
-  .wrap{padding:12px}
+  .wrap{padding:12px 12px 72px}
+  header{position:sticky;top:0;z-index:20;background:var(--bg);padding:10px 0 8px}
+  header .sub,header .links{display:none}
+  .chips{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
+  .chips::-webkit-scrollbar{display:none}
+  .chip{flex:0 0 auto}
+  .agents{display:flex;gap:10px;overflow-x:auto;padding:2px 2px 8px;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+  .agents::-webkit-scrollbar{display:none}
+  .acard{flex:0 0 78%;scroll-snap-align:start}
+  .acard .meta,.acard .tasks,.acard .notask{display:none}
+  .acard .cur{display:block;font-size:13px;margin-top:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .acard .cur b{font-weight:600}
+  .acard .quota{display:block;color:var(--muted);font-size:12px;margin-top:2px}
+  .acard .go{display:block;color:var(--accent);font-size:12px;margin-top:6px}
+  .tabs{position:sticky;top:45px;z-index:15;display:flex;gap:6px;padding:8px 0;background:var(--bg)}
+  .tab{flex:1;text-align:center;padding:9px 0;border-radius:10px;border:1px solid var(--line);background:var(--card);font-size:13px;cursor:pointer;color:var(--muted);white-space:nowrap}
+  .tab b{font-size:13px}
+  .tab.on{border-color:var(--accent);background:var(--accent-soft);color:var(--ink);font-weight:700}
+  .tab.on.q{border-color:#f59e0b;background:var(--amber-bg)}
+  .tab.on.d{border-color:#0284c7;background:var(--blue-bg)}
+  .tab.on.f{border-color:#16a34a;background:var(--green-bg)}
   .cols{grid-template-columns:1fr}
-  .agents{grid-template-columns:1fr}
+  .col{display:none}
+  .col.show{display:block}
+  .tcard .ttl{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .tcard .prev{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .tcard .who{display:none}
+  .tcard .who2{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);margin-top:8px}
+  #detail.show{position:fixed;left:0;right:0;bottom:0;z-index:31;height:86vh;margin:0;border-radius:16px 16px 0 0;overflow-y:auto;-webkit-overflow-scrolling:touch;box-shadow:0 -4px 24px rgba(0,0,0,.2);padding:0 16px calc(16px + env(safe-area-inset-bottom))}
+  #detail .grab{display:block;width:40px;height:4px;border-radius:2px;background:#d4d4d8;margin:8px auto 0;flex:0 0 auto}
+  #detail .dhead{position:sticky;top:0;background:var(--card);padding-top:6px}
+  #detail .mdwrap{max-height:none}
+  .bottomnav{position:fixed;bottom:0;left:0;right:0;z-index:20;background:var(--card);border-top:1px solid var(--line);display:flex;padding:6px 0 calc(6px + env(safe-area-inset-bottom))}
+  .bottomnav a{flex:1;text-align:center;text-decoration:none;color:var(--muted);font-size:11px}
+  .bottomnav a.on{color:var(--accent);font-weight:700}
+  .bottomnav .ic{display:block;font-size:18px;line-height:1.2}
   h1{font-size:18px}
 }
 </style>
@@ -100,10 +146,22 @@ h2{font-size:16px;margin:20px 0 10px}
   <h2>Agent 进度</h2>
   <div class="agents" id="agents"></div>
   <h2>工单</h2>
+  <div class="tabs" id="tabs">
+    <div class="tab on" data-col="all">全部 <b>0</b></div>
+    <div class="tab q" data-col="queued">待领取 <b>0</b></div>
+    <div class="tab d" data-col="doing">进行中 <b>0</b></div>
+    <div class="tab f" data-col="done">已完成 <b>0</b></div>
+  </div>
   <div class="cols" id="cols"></div>
   <div id="detail"></div>
   <div class="foot">数据来源：/opt/shared/agent-bus/tasks/（task.md + result.md）与 /api/chat/agents · 每 30 秒自动刷新 · 点工单卡片看全文，点 Agent 卡片进聊天</div>
 </div>
+<div id="sheetBack"></div>
+<nav class="bottomnav">
+  <a href="/board/" class="on"><span class="ic">📋</span>看板</a>
+  <a href="/chat"><span class="ic">💬</span>聊天</a>
+  <a href="/command-center/"><span class="ic">🎛️</span>指挥中心</a>
+</nav>
 <script>
 (function(){
 "use strict";
@@ -216,7 +274,8 @@ function md(src){
 }
 function fmtTs(ts){if(!ts)return"—";var d=new Date(ts*1000);return ("0"+(d.getMonth()+1)).slice(-2)+"-"+("0"+d.getDate()).slice(-2)+" "+("0"+d.getHours()).slice(-2)+":"+("0"+d.getMinutes()).slice(-2);}
 function api(p){return fetch(p,{credentials:"same-origin"}).then(function(r){if(r.status===401)throw new Error("unauthorized");return r.json();});}
-var agents=[], tasks=[], selId=null;
+var agents=[], tasks=[], selId=null, curTab="all";
+function isMobile(){return window.matchMedia("(max-width:700px)").matches;}
 var ST_LABEL={queued:"待领取",doing:"进行中",done:"已完成"};
 var ST_CLS={queued:"queued",doing:"doing",done:"done"};
 function showErr(t){var e=document.getElementById("err");e.style.display=t?"block":"none";e.textContent=t||"";}
@@ -238,6 +297,11 @@ function render(){
     '<span class="chip run">进行中 <b>'+d+'</b></span>'+
     '<span class="chip done">已完成 <b>'+f+'</b></span>'+
     '<span class="chip">Agent 在线 <b>'+online+' / '+agents.length+'</b></span>';
+  document.querySelectorAll("#tabs .tab").forEach(function(tab){
+    var k=tab.getAttribute("data-col");
+    var n=k==="all"?tasks.length:tasks.filter(function(t){return t.status===k;}).length;
+    var b=tab.querySelector("b");if(b)b.textContent=n;
+  });
   var al=document.getElementById("agents");al.innerHTML="";
   if(!agents.length)al.innerHTML='<div class="empty">暂无 Agent</div>';
   agents.forEach(function(a){
@@ -245,8 +309,13 @@ function render(){
     var ts=agentTasks(a);
     var quota=(a.quota!=null)?("免费额度 "+a.quota+"%"+(a.quotaReset?" · "+a.quotaReset+"重置":"")+(a.quotaTokens!=null?" · 附加词元剩 "+a.quotaTokens:"")):"额度未上报";
     var card=document.createElement("div");card.className="acard";
+    var curTask=null;
+    if(ts.length){curTask=ts.find(function(t){return t.status==="doing";})||ts[0];}
     var th='<div class="top"><div class="avatar">'+(a.hasAvatar&&a.img?'<img src="'+esc(a.img)+'" alt="" onerror="this.remove()">':'')+esc(a.initial||a.name.slice(0,1))+'</div><div><div class="name">'+esc(a.name)+'<span class="dot '+(on?(a.status==="relay"?"relay":"online"):"")+'"></span></div><div class="role">'+esc(a.role||"")+'</div></div></div>'+
-      '<div class="meta">'+esc(a.statusText||"")+'<br>尾网 <b>'+esc(a.tailnet||"待补充")+'</b> · '+esc(quota)+'</div>';
+      '<div class="meta">'+esc(a.statusText||"")+'<br>尾网 <b>'+esc(a.tailnet||"待补充")+'</b> · '+esc(quota)+'</div>'+
+      '<div class="cur">'+(curTask?(ST_LABEL[curTask.status]||curTask.status)+'：<b>'+esc(curTask.id)+' · '+esc(curTask.title)+'</b>':"暂无任务")+'</div>'+
+      '<div class="quota">'+esc(quota)+'</div>'+
+      '<div class="go">点卡片进聊天 →</div>';
     if(ts.length){
       th+='<div class="tasks">'+ts.map(function(t){
         return '<span class="ttag '+ST_CLS[t.status]+'" data-tid="'+esc(t.id)+'">'+esc(t.id)+' · '+esc(t.title)+'</span>';
@@ -266,15 +335,17 @@ function render(){
   [["queued","待领取"],["doing","进行中"],["done","已完成"]].forEach(function(pair){
     var key=pair[0], label=pair[1];
     var list=tasks.filter(function(t){return t.status===key;});
-    var col=document.createElement("div");col.className="col";
+    var col=document.createElement("div");col.className="col"+((curTab==="all"||curTab===key)?" show":"");
     var html='<h3>'+label+' <span class="n">'+list.length+'</span></h3>';
     if(!list.length)html+='<div class="empty">暂无</div>';
     list.forEach(function(t){
+      var an=(t.assignee||"").trim().split(/[(（]/)[0].trim();
       html+='<div class="tcard'+(selId===t.id?" sel":"")+'" data-tid="'+esc(t.id)+'">'+
-        '<div class="tid">'+esc(t.id)+'<span class="st '+ST_CLS[t.status]+'">'+esc(t.statusLabel||ST_LABEL[t.status]||t.status)+'</span></div>'+
+        '<div class="tid">'+esc(t.id)+'<span class="st '+ST_CLS[t.status]+'"><i></i>'+esc(t.statusLabel||ST_LABEL[t.status]||t.status)+'</span></div>'+
         '<div class="ttl">'+esc(t.title)+'</div>'+
         '<div class="who">认领：'+esc(t.assignee||"未认领")+(t.claimed_at?" · "+esc(t.claimed_at):"")+'<br>更新：'+fmtTs(t.updatedTs)+'</div>'+
         (t.resultPreview?'<div class="prev">'+esc(t.resultPreview)+'</div>':"")+
+        '<div class="who2"><span class="mini-av'+(an?"":" none")+'">'+esc(an?an.slice(0,1):"?")+'</span>'+esc(an||"未认领")+' · 更新 '+fmtTs(t.updatedTs)+'</div>'+
         '</div>';
     });
     col.innerHTML=html;
@@ -287,18 +358,27 @@ function render(){
 }
 function renderDetail(){
   var box=document.getElementById("detail");
+  var back=document.getElementById("sheetBack");
   var t=tasks.find(function(x){return x.id===selId;});
-  if(!t){box.className="";box.innerHTML="";return;}
+  if(!t){box.className="";box.innerHTML="";if(back)back.className="";document.body.style.overflow="";return;}
   box.className="show";
-  box.innerHTML='<h3>'+esc(t.id)+' · '+esc(t.title)+'</h3>'+
+  box.innerHTML='<div class="grab"></div>'+
+    '<div class="dhead"><h3>'+esc(t.id)+' · '+esc(t.title)+'</h3><button class="x" id="detailClose" aria-label="关闭">✕</button></div>'+
     '<div class="dmeta">认领：'+esc(t.assignee||"未认领")+(t.claimed_at?" · "+esc(t.claimed_at):"")+' · 状态：'+esc(t.statusLabel||t.status)+(t.resultStatus?"（结果："+esc(t.resultStatus)+"）":"")+' · 更新：'+fmtTs(t.updatedTs)+'</div>'+
     '<h4>task.md</h4><div class="mdwrap"><div class="md">'+md(t.taskMd||"(空)")+'</div></div>'+
     '<h4>result.md</h4><div class="mdwrap"><div class="md">'+md(t.resultMd||"(空)")+'</div></div>';
+  var x=document.getElementById("detailClose");
+  if(x)x.onclick=function(){closeDetail();};
+  if(isMobile()){if(back)back.className="show";document.body.style.overflow="hidden";}
+  else{if(back)back.className="";document.body.style.overflow="";}
+}
+function closeDetail(){
+  selId=null;render();
 }
 function selectTask(id){
   selId=id;render();
   var box=document.getElementById("detail");
-  if(box)box.scrollIntoView({behavior:"smooth",block:"start"});
+  if(box&&!isMobile())box.scrollIntoView({behavior:"smooth",block:"start"});
 }
 function load(){
   return Promise.all([api("/api/chat/agents"),api("/api/tasks")]).then(function(res){
@@ -312,6 +392,18 @@ function load(){
     showErr(String(e.message||e)==="unauthorized"?"未登录，请先在首页登录，再打开看板。":String(e.message||e));
   });
 }
+document.getElementById("tabs").querySelectorAll(".tab").forEach(function(tab){
+  tab.onclick=function(){
+    document.querySelectorAll("#tabs .tab").forEach(function(x){x.classList.remove("on");});
+    tab.classList.add("on");curTab=tab.getAttribute("data-col");render();
+    var tabs=document.getElementById("tabs");
+    if(tabs&&isMobile())window.scrollTo({top:tabs.offsetTop-56,behavior:"smooth"});
+  };
+});
+document.getElementById("sheetBack").onclick=function(){closeDetail();};
+document.addEventListener("keydown",function(e){if(e.key==="Escape"&&selId)closeDetail();});
+var rzT=null;
+window.addEventListener("resize",function(){clearTimeout(rzT);rzT=setTimeout(render,150);});
 load();
 setInterval(load,30000);
 })();
