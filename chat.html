@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>聊天 · 我的个人工作台</title>
 <style>
 :root{--bg:#f4f4f5;--card:#fff;--border:#e4e4e7;--ink:#18181b;--muted:#71717a;--accent:#0f766e;--accent-soft:#f0fdfa;--me:#0f766e;--me-text:#fff}
@@ -27,6 +27,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hira
 .agent .last{color:var(--muted);font-size:12px;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #main{flex:1;display:flex;flex-direction:column;min-width:0}
 #chatHead{padding:12px 16px;background:var(--card);border-bottom:1px solid var(--border);display:flex;gap:10px;align-items:center}
+#backBtn{display:none;border:1px solid var(--border);background:#fff;border-radius:8px;width:36px;height:36px;font-size:20px;line-height:1;cursor:pointer;flex-shrink:0}
 #chatHead .title{font-weight:700}
 #chatHead .status{color:var(--muted);font-size:13px}
 #chatHead .quota{color:var(--muted);font-size:13px}
@@ -46,14 +47,24 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hira
 #sendBtn:disabled{opacity:.5;cursor:default}
 #uploadBtn{border:1px solid var(--border);background:#fff;border-radius:10px;height:44px;padding:0 12px;cursor:pointer}
 #err{padding:8px 16px;color:#b91c1c;font-size:13px;display:none}
-@media(max-width:700px){#agents{width:96px}#agents h2,.agent .role,.agent .last{display:none}.agent{justify-content:center}.msg{max-width:90%}}
+@media(max-width:700px){
+  #agents{width:100%;border-right:0}
+  .msg{max-width:88%}
+  #input{font-size:16px}
+  #chatHead{padding:10px 12px}
+  #msgs{padding:12px}
+  #composer{padding:10px 12px calc(10px + env(safe-area-inset-bottom,0px))}
+  #backBtn{display:inline-flex;align-items:center;justify-content:center}
+  body.show-chat #agents{display:none}
+  body:not(.show-chat) #main{display:none}
+}
 </style>
 </head>
 <body>
 <div id="app">
   <div id="agents"><h2>助手</h2><div id="agentList"></div></div>
   <div id="main">
-    <div id="chatHead"><div class="avatar" id="headAvatar">R</div><div><div class="title" id="headName">加载中…</div><div class="status" id="headStatus"></div><div class="quota" id="headQuota"></div></div></div>
+    <div id="chatHead"><button id="backBtn" aria-label="返回助手列表">‹</button><div class="avatar" id="headAvatar">R</div><div><div class="title" id="headName">加载中…</div><div class="status" id="headStatus"></div><div class="quota" id="headQuota"></div></div></div>
     <div id="msgs"></div>
     <div id="typing"></div>
     <div id="err"></div>
@@ -70,6 +81,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hira
 "use strict";
 var params=new URLSearchParams(location.search);
 var current=params.get("agent")||"rumi";
+if(params.get("agent"))document.body.classList.add("show-chat");
 var agents=[];
 var msgs=[];
 var es=null, pollTimer=null, agentsTimer=null;
@@ -129,6 +141,7 @@ function loadMsgs(markRead){
 }
 function selectAgent(id){
   current=id;
+  document.body.classList.add("show-chat");
   try{history.replaceState(null,"","/chat?agent="+encodeURIComponent(id));}catch(e){}
   streamBubble=null;streamId=null;
   renderAgents();loadMsgs().catch(function(e){showErr(String(e.message||e));});
@@ -163,6 +176,7 @@ function showStream(sid,text){
 }
 function clearStream(){streamBubble=null;streamId=null;}
 document.getElementById("sendBtn").onclick=sendText;
+document.getElementById("backBtn").onclick=function(){document.body.classList.remove("show-chat");try{history.replaceState(null,"","/chat");}catch(e){}};
 document.getElementById("input").addEventListener("keydown",function(e){if(e.key==="Enter"&&(e.metaKey||e.altKey)){e.preventDefault();sendText();}});
 document.getElementById("uploadBtn").onclick=function(){document.getElementById("fileInput").click();};
 document.getElementById("fileInput").addEventListener("change",function(e){
@@ -176,6 +190,7 @@ loadAgents().then(function(){return loadMsgs();}).then(function(){
   pollTimer=setInterval(function(){if(!es||es.readyState===EventSource.CLOSED)loadMsgs(false);},5000);
   agentsTimer=setInterval(loadAgents,30000);
 }).catch(function(e){
+  document.body.classList.add("show-chat");
   if(String(e.message)==="unauthorized"){document.getElementById("msgs").innerHTML='<div class="msg agent">未登录，请先在首页登录，再打开聊天。</div>';}
   else showErr(String(e.message||e));
 });
