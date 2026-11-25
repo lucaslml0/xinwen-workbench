@@ -654,7 +654,9 @@ def chat_agent_status():
                     _ls = st.get("last_seen", "").replace("Z", "+00:00")
                     _ls = re.sub(r"([+-]\d{2})(\d{2})$", r"\1:\2", _ls)
                     dt = datetime.fromisoformat(_ls)
-                    if now - dt.timestamp() > 45 * 60:
+                    # workbuddy 平台限制：心跳容忍度 10 分钟；其他子 Agent 45 分钟
+                    _tol = 10 * 60 if aid.startswith("workbuddy-") else 45 * 60
+                    if now - dt.timestamp() > _tol:
                         status = "offline"
                         status_text = "离线 · 上次在线 " + dt.strftime("%m-%d %H:%M")
                 except Exception:
