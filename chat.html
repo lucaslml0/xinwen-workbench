@@ -87,7 +87,7 @@ function renderAgents(){
     list.appendChild(div);
   });
   var cur=agents.find(function(a){return a.id===current;});
-  if(cur){document.getElementById("headAvatar").textContent=cur.initial||cur.name.slice(0,1);document.getElementById("headName").textContent=cur.name;document.getElementById("headStatus").textContent=cur.statusText||"";document.getElementById("headQuota").textContent=(cur.quota!=null)?("免费额度剩余 "+cur.quota+"%"+(cur.quotaReset?" · "+cur.quotaReset+"重置":"")):"";}
+  if(cur){document.getElementById("headAvatar").textContent=cur.initial||cur.name.slice(0,1);document.getElementById("headName").textContent=cur.name;document.getElementById("headStatus").textContent=cur.statusText||"";document.getElementById("headQuota").textContent=(cur.quota!=null)?("免费额度剩余 "+cur.quota+"%"+(cur.quotaReset?" · "+cur.quotaReset+"重置":"")+(cur.quotaTokens!=null?" · 附加词元剩 "+cur.quotaTokens:"")):"";}
 }
 function renderMsgs(){
   var box=document.getElementById("msgs");box.innerHTML="";

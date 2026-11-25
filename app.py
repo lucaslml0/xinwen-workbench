@@ -669,6 +669,11 @@ def chat_agent_status():
         qp = qinfo.get("pct")
         qa = qinfo.get("as_of", "")
         qr = qinfo.get("reset") or ''
+        # 附加词元取自 note 里的“附加词元剩 Y”，Y 可能是 0 / 1B 这类字符串，不自创字段
+        qt = None
+        _tm = re.search(r"附加词元剩\s*([^\s，；,;]+)", qinfo.get("note") or "")
+        if _tm:
+            qt = _tm.group(1)
         # 免费额度按周重置：存的重置时间过期后自动顺延 7 天，直到未来
         if qr:
             try:
@@ -688,7 +693,7 @@ def chat_agent_status():
         out.append({"id": aid, "name": name, "initial": initial, "cls": cls,
                     "img": "/avatar-" + aid + ".png?v=4",
                     "video": "/avatar-" + aid + ".mp4?v=4" if aid in ("muse", "muse-1", "muse-2", "muse-3", "muse-4") else "",
-                    "quota": qp, "quotaAsOf": qa, "quotaReset": qr,
+                    "quota": qp, "quotaAsOf": qa, "quotaReset": qr, "quotaTokens": qt,
                     "role": role, "status": status, "statusText": status_text,
                     "tailnet": (ws_map.get(aid) or {}).get("tailnet"),
                     "time": last_time, "lastText": last_text})
