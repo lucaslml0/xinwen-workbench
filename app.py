@@ -110,7 +110,7 @@ def scan_sub_agents():
                 q = json.load(f) or {}
         except Exception:
             pass
-        out.append({"id": n, "name": n, "role": st.get("role") or "子 Agent",
+        out.append({"id": n, "name": st.get("display") or n, "role": st.get("role") or "子 Agent",
                     "status": st.get("status") or "待签到", "tailnet": st.get("tailnet"),
                     "last_seen": st.get("last_seen"), "quota": q})
     _SUB_AGENT_CACHE["ts"] = now
