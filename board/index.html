@@ -59,7 +59,24 @@ h2{font-size:16px;margin:20px 0 10px}
 #detail.show{display:block}
 #detail h3{margin:0 0 4px}
 #detail .dmeta{color:var(--muted);font-size:13px;margin-bottom:10px}
-#detail pre{background:var(--gray-bg);border-radius:8px;padding:10px 12px;white-space:pre-wrap;word-break:break-word;font-size:13px;line-height:1.6;margin:8px 0;max-height:320px;overflow:auto}
+#detail .mdwrap{background:var(--gray-bg);border-radius:8px;padding:10px 14px;margin:8px 0;max-height:480px;overflow:auto}
+#detail .md{font-size:13px;line-height:1.7;word-break:break-word}
+#detail .md>*:first-child{margin-top:0}
+#detail .md>*:last-child{margin-bottom:0}
+#detail .md h1{font-size:17px;margin:14px 0 6px}
+#detail .md h2{font-size:16px;margin:14px 0 6px}
+#detail .md h3{font-size:15px;margin:12px 0 4px}
+#detail .md h4{font-size:14px;margin:12px 0 4px}
+#detail .md h5,#detail .md h6{font-size:13px;margin:12px 0 4px}
+#detail .md p{margin:6px 0}
+#detail .md ul,#detail .md ol{margin:6px 0;padding-left:22px}
+#detail .md li{margin:2px 0}
+#detail .md code{background:#e4e4e7;border-radius:4px;padding:1px 5px;font-size:12px}
+#detail .md pre{background:#27272a;color:#f4f4f5;border-radius:8px;padding:10px 12px;overflow:auto;margin:8px 0}
+#detail .md pre code{background:none;color:inherit;padding:0;font-size:12px}
+#detail .md blockquote{border-left:3px solid var(--accent);margin:8px 0;padding:2px 12px;color:var(--muted)}
+#detail .md a{color:var(--accent)}
+#detail .md hr{border:none;border-top:1px solid var(--line);margin:12px 0}
 #detail h4{margin:12px 0 4px;font-size:14px}
 .foot{color:var(--muted);font-size:12px;margin:18px 0 8px}
 #err{color:#b91c1c;font-size:13px;display:none;margin:10px 0}
@@ -91,6 +108,112 @@ h2{font-size:16px;margin:20px 0 10px}
 (function(){
 "use strict";
 function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];});}
+/* 安全 markdown 渲染：先转义全部 HTML 再转换语法，内容里的标签/脚本只做展示、不执行。
+   支持：围栏代码块、行内代码、# 到 ###### 标题、星号加粗/斜体、
+   [链接](url)（仅 http(s)/站内/锚点）、无序/有序列表（1 层嵌套）、引用、分割线、段落。
+   注意：下划线版强调（__加粗__/_斜体_）已去掉——工单里 tasks_api、__init__ 这类标识符
+   会被误解析，星号版已够用。 */
+function mdInlineText(s){
+  var codes=[];
+  s=s.replace(/`([^`\n]+)`/g,function(m,c){codes.push(c);return "\u0000"+(codes.length-1)+"\u0000";});
+  s=s.replace(/\*\*([^\n*]+)\*\*/g,'<strong>$1</strong>');
+  s=s.replace(/(^|[^*\w])\*([^\n*]+)\*/g,'$1<em>$2</em>');
+  s=s.replace(/\u0000(\d+)\u0000/g,function(m,i){return '<code>'+codes[+i]+'</code>';});
+  return s;
+}
+function mdInline(s){
+  // 链接先抽成占位符：避免 _blank 这类插入属性里的下划线被斜体规则误伤
+  var links=[];
+  s=s.replace(/\[([^\]]+)\]\(([^()\s]*(?:\([^)]*\)[^()\s]*)*)\)/g,function(m,t,u){
+    var inner=mdInlineText(t);
+    if(/^(https?:\/\/|\/|#)/i.test(u)){links.push('<a href="'+u+'" target="_blank" rel="noopener">'+inner+'</a>');}
+    else{links.push(inner);}
+    return "\u0001"+(links.length-1)+"\u0001";
+  });
+  s=mdInlineText(s);
+  s=s.replace(/\u0001(\d+)\u0001/g,function(m,i){return links[+i];});
+  return s;
+}
+function md(src){
+  var lines=String(src==null?"":src).replace(/\r\n?/g,"\n").split("\n");
+  var out=[], i=0, buf=[];
+  function flushPara(){
+    if(!buf.length)return;
+    out.push('<p>'+mdInline(buf.join('<br>'))+'</p>');
+    buf=[];
+  }
+  function mdList(start){
+    var html='', j=start, stack=[];
+    function closeLi(){if(stack.length&&stack[stack.length-1].liOpen){html+='</li>';stack[stack.length-1].liOpen=false;}}
+    function closeTo(ind){
+      while(stack.length&&stack[stack.length-1].indent>ind){closeLi();html+='</'+stack[stack.length-1].tag+'>';stack.pop();}
+    }
+    function closeAll(){while(stack.length){closeLi();html+='</'+stack[stack.length-1].tag+'>';stack.pop();}}
+    while(j<lines.length){
+      var m=lines[j].match(/^(\s*)([-*+]|\d+[.)])\s+(.*)$/);
+      if(!m)break;
+      var ind=m[1].replace(/\t/g,'    ').length;
+      var tag=/^\d/.test(m[2])?'ol':'ul';
+      if(!stack.length){
+        html+='<'+tag+'>';stack.push({indent:ind,tag:tag,liOpen:false});
+      }else if(ind>stack[stack.length-1].indent){
+        html+='<'+tag+'>';stack.push({indent:ind,tag:tag,liOpen:false});
+      }else{
+        closeTo(ind);
+        if(stack.length&&stack[stack.length-1].indent===ind&&stack[stack.length-1].tag!==tag){
+          closeLi();html+='</'+stack[stack.length-1].tag+'>';stack.pop();
+          html+='<'+tag+'>';stack.push({indent:ind,tag:tag,liOpen:false});
+        }
+      }
+      closeLi();
+      html+='<li>'+mdInline(esc(m[3]));
+      stack[stack.length-1].liOpen=true;
+      j++;
+      while(j<lines.length){
+        var c=lines[j];
+        if(!c.trim()){j++;break;}
+        if(/^(\s*)([-*+]|\d+[.)])\s+(.*)$/.test(c))break;
+        if(c.match(/^\s*/)[0].length>stack[stack.length-1].indent){html+='<br>'+mdInline(esc(c.trim()));j++;}
+        else break;
+      }
+    }
+    closeAll();
+    return {html:html,next:j};
+  }
+  while(i<lines.length){
+    var ln=lines[i];
+    if(/^\s*```/.test(ln)){
+      flushPara();
+      var code=[], k=i+1;
+      while(k<lines.length&&!/^\s*```\s*$/.test(lines[k])){code.push(lines[k]);k++;}
+      out.push('<pre><code>'+esc(code.join("\n"))+'</code></pre>');
+      i=k+1;continue;
+    }
+    var h=ln.match(/^(#{1,6})\s+(.+)$/);
+    if(h){flushPara();out.push('<h'+h[1].length+'>'+mdInline(esc(h[2].trim()))+'</h'+h[1].length+'>');i++;continue;}
+    if(/^\s*([-*_])(\s*\1){2,}\s*$/.test(ln)){flushPara();out.push('<hr>');i++;continue;}
+    var bq=ln.match(/^\s*>\s?(.*)$/);
+    if(bq){
+      flushPara();
+      var q=[];
+      while(i<lines.length){var mq=lines[i].match(/^\s*>\s?(.*)$/);if(!mq)break;q.push(mq[1]);i++;}
+      out.push('<blockquote>'+mdInline(q.map(function(x){return esc(x);}).join('<br>'))+'</blockquote>');
+      continue;
+    }
+    if(/^(\s*)([-*+]|\d+[.)])\s+(.*)$/.test(ln)){
+      flushPara();
+      var r=mdList(i);
+      out.push(r.html);
+      i=r.next;
+      continue;
+    }
+    if(!ln.trim()){flushPara();i++;continue;}
+    buf.push(esc(ln));
+    i++;
+  }
+  flushPara();
+  return out.join("\n");
+}
 function fmtTs(ts){if(!ts)return"—";var d=new Date(ts*1000);return ("0"+(d.getMonth()+1)).slice(-2)+"-"+("0"+d.getDate()).slice(-2)+" "+("0"+d.getHours()).slice(-2)+":"+("0"+d.getMinutes()).slice(-2);}
 function api(p){return fetch(p,{credentials:"same-origin"}).then(function(r){if(r.status===401)throw new Error("unauthorized");return r.json();});}
 var agents=[], tasks=[], selId=null;
@@ -169,8 +292,8 @@ function renderDetail(){
   box.className="show";
   box.innerHTML='<h3>'+esc(t.id)+' · '+esc(t.title)+'</h3>'+
     '<div class="dmeta">认领：'+esc(t.assignee||"未认领")+(t.claimed_at?" · "+esc(t.claimed_at):"")+' · 状态：'+esc(t.statusLabel||t.status)+(t.resultStatus?"（结果："+esc(t.resultStatus)+"）":"")+' · 更新：'+fmtTs(t.updatedTs)+'</div>'+
-    '<h4>task.md</h4><pre>'+esc(t.taskMd||"(空)")+'</pre>'+
-    '<h4>result.md</h4><pre>'+esc(t.resultMd||"(空)")+'</pre>';
+    '<h4>task.md</h4><div class="mdwrap"><div class="md">'+md(t.taskMd||"(空)")+'</div></div>'+
+    '<h4>result.md</h4><div class="mdwrap"><div class="md">'+md(t.resultMd||"(空)")+'</div></div>';
 }
 function selectTask(id){
   selId=id;render();
