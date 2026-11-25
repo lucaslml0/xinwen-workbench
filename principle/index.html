@@ -126,18 +126,18 @@
   <header class="top">
     <div class="title-block">
       <h1>工作台原理：<em>一个盒子、一群助手、两条路</em></h1>
-      <p class="lede">工作台不是装在某家大公司云上，而是<strong>跑在你家里一个巴掌大的小盒子上</strong>，由 5 个 AI 助手（muse 一家）轮流值班干活。点下面任意一块，看它是干什么的。</p>
+      <p class="lede">工作台不是装在某家大公司云上，而是<strong>跑在你家里一个巴掌大的小盒子上</strong>，由 <span class="agentCount">5</span> 个 AI 助手（muse 一家）轮流值班干活。点下面任意一块，看它是干什么的。</p>
     </div>
     <div class="analogy">
       <div class="ic" aria-hidden="true">🏢</div>
-      <p><b>打个比方：整套系统是一家小公司。</b>盒子是<b>办公室</b>，CasaOS 是<b>前台大屏和门禁</b>；Tailscale 是只发给自己人的<b>内部专线</b>，零讯是对外营业的<b>正门</b>；muse 是<b>店长</b>，muse-1 是<b>副店长</b>，muse-2 / 3 / 4 是<b>三位员工</b>。你，就是老板。</p>
+      <p><b>打个比方：整套系统是一家小公司。</b>盒子是<b>办公室</b>，CasaOS 是<b>前台大屏和门禁</b>；Tailscale 是只发给自己人的<b>内部专线</b>，零讯是对外营业的<b>正门</b>；Rumi 是<b>店长</b>，muse-1 是<b>副店长</b>，<span class="staffList">muse-2、muse-3、muse-4</span> 是<b><span class="staffCount">三</span>位员工</b>。你，就是老板。</p>
     </div>
   </header>
 
   <!-- ================= MAIN ================= -->
   <div class="main">
     <section class="diagram" aria-label="系统关系图">
-      <h2>一张图看懂全貌<span>你在最上面，盒子在中间当枢纽，5 个 muse 围着盒子干活</span></h2>
+      <h2>一张图看懂全貌<span>你在最上面，盒子在中间当枢纽，<span class="agentCount">5</span> 个 muse 围着盒子干活</span></h2>
       <div class="d-row">
         <button type="button" class="node c-you" data-key="you"><span class="emoji" aria-hidden="true">🧑</span><span class="t">你（zhao）</span><span class="s">手机 / 电脑，随时随地下指令、看结果</span></button>
       </div>
@@ -164,7 +164,7 @@
         <span class="path">📋 工单池派活 · 每 <b>30 分钟</b>领一次</span>
         <span class="path">💬 聊天中继 · 约 <b>1 分钟</b>取一次</span>
       </div>
-      <div class="d-row">
+      <div class="d-row" id="agentNodes">
         <button type="button" class="node" data-key="muse"><span class="emoji" aria-hidden="true">🧭</span><span class="t">muse</span><span class="s">主 Agent · 总调度（店长）</span></button>
         <button type="button" class="node" data-key="muse1"><span class="emoji" aria-hidden="true">🧑‍💼</span><span class="t">muse-1</span><span class="s">平级调度者（副店长）</span></button>
         <button type="button" class="node" data-key="muse2"><span class="emoji" aria-hidden="true">🔧</span><span class="t">muse-2</span><span class="s">子 Agent · 干活的</span></button>
@@ -194,13 +194,13 @@
           <div class="steps">
             <div class="step"><div class="n">1</div><p><b>你把事交给店长</b>——比如“调研一批选题”，主 Agent（或 muse-1）判断适合并行外包，就拆成一张张工单。</p></div>
             <div class="step"><div class="n">2</div><p><b>工单进池</b>——写进盒子上的工单池 <code>/opt/shared/agent-bus/</code>，带调度者前缀标记（协议 v1.1，T / X 防撞），谁派的单一目了然。</p></div>
-            <div class="step"><div class="n">3</div><p><b>员工轮询领单</b>——muse-2 / 3 / 4 每 <b>30 分钟</b>来看一次，领走自己的单开干；没单就安静待命，不乱动仓库。</p></div>
+            <div class="step"><div class="n">3</div><p><b>员工轮询领单</b>——<span class="staffList">muse-2、muse-3、muse-4</span> 每 <b>30 分钟</b>来看一次，领走自己的单开干；没单就安静待命，不乱动仓库。</p></div>
             <div class="step"><div class="n">4</div><p><b>结果写回 + 验收</b>——result 写回池子，派单的调度者亲自交叉对账，验过才向你汇报；员工说“干完了”不算数。</p></div>
           </div>
         </div>
         <div class="flow" id="f3" role="tabpanel" hidden>
           <div class="steps">
-            <div class="step"><div class="n">1</div><p><b>你在聊天页发消息</b>——左侧栏 5 个 muse 一屏全显，点谁和谁聊，消息先落到盒子上的聊天中继里排队。</p></div>
+            <div class="step"><div class="n">1</div><p><b>你在聊天页发消息</b>——左侧栏 <span class="agentCount">5</span> 个入口一屏全显，点谁和谁聊，消息先落到盒子上的聊天中继里排队。</p></div>
             <div class="step"><div class="n">2</div><p><b>对方约 1 分钟来取一次</b>——聊天是“取件制”不是“推送制”，每个 muse 约 1 分钟轮询一次；回复慢一拍是正常现象，不是卡死。</p></div>
             <div class="step"><div class="n">3</div><p><b>回复实时推回页面</b>——回复写回盒子后，聊天页用长连接（SSE）立刻推到你屏幕上，不用手动刷新。</p></div>
             <div class="step"><div class="n">4</div><p><b>聊天轮询 ≠ 工单轮询</b>——聊天 1 分钟图对话顺畅，工单 30 分钟图省资源；急活别走工单，直接找店长自己干更快。</p></div>
@@ -221,7 +221,7 @@
         </div>
         <div class="door">
           <h3>🛡️ Tailscale = 员工通道（图安全）</h3>
-          <p>你管盒子、muse-2 / 3 / 4 互相协作时走它，<b>先开专线才进得去</b>；CasaOS 后台、盒子内部服务全都能到，因为这已经是“进了公司内部”。主 Agent 这台机器也一样，只能走这条专线连盒子。盒子连不回主 Agent，是因为主 Agent 这边不接受入站连接。</p>
+          <p>你管盒子、<span class="staffList">muse-2、muse-3、muse-4</span> 互相协作时走它，<b>先开专线才进得去</b>；CasaOS 后台、盒子内部服务全都能到，因为这已经是“进了公司内部”。主 Agent 这台机器也一样，只能走这条专线连盒子。盒子连不回主 Agent，是因为主 Agent 这边不接受入站连接。</p>
         </div>
       </div>
       <p class="vs-note">记不住就记一句：<b>看工作台走零讯，管盒子走 Tailscale。</b></p>
@@ -255,8 +255,10 @@
   };
   var box = document.getElementById('nodeDetail');
   var nodes = Array.prototype.slice.call(document.querySelectorAll('.node'));
+  var currentKey = 'box';
   function show(key){
     var it = details[key]; if(!it) return;
+    currentKey = key;
     box.innerHTML = '';
     var b = document.createElement('b'); b.textContent = it.t;
     var p = document.createElement('p'); p.textContent = it.d;
@@ -266,7 +268,48 @@
   nodes.forEach(function(n){
     n.addEventListener('click', function(){ show(n.getAttribute('data-key')); });
   });
+  var CN=['零','一','二','三','四','五','六','七','八','九','十'];
+  function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+  /* ---- 动态成员：调工作台同源接口 /api/chat/agents，成员从 agents/ 工位目录来 ----
+     节点按钮、Tailscale 门牌、详情条目与各处计数都跟随接口；接口失败时保留静态兜底文案。 */
+  function loadAgents(){
+    fetch('/api/chat/agents',{credentials:'same-origin'})
+      .then(function(r){return r.json();})
+      .then(function(d){
+        if(!d||!d.ok||!Array.isArray(d.agents))return;
+        var subs=d.agents.filter(function(a){return a.id!=='rumi'&&a.id!=='muse-1';});
+        var total=d.agents.length;
+        document.querySelectorAll('.agentCount').forEach(function(el){el.textContent=total;});
+        var listTxt=subs.map(function(a){return a.name;}).join('、')||'—';
+        document.querySelectorAll('.staffList').forEach(function(el){el.textContent=listTxt;});
+        document.querySelectorAll('.staffCount').forEach(function(el){el.textContent=CN[subs.length]||subs.length;});
+        var row=document.getElementById('agentNodes');
+        if(row){
+          var emojis={rumi:'🧭','muse-1':'🧑‍💼'};
+          var subsTxt={rumi:'主 Agent · 总调度（店长）','muse-1':'平级调度者（副店长）'};
+          var html='';
+          d.agents.forEach(function(a){
+            var em=emojis[a.id]||'🔧';
+            var st=subsTxt[a.id]||'子 Agent · 干活的';
+            html+='<button type="button" class="node" data-key="'+esc(a.id)+'"><span class="emoji" aria-hidden="true">'+em+'</span><span class="t">'+esc(a.name)+'</span><span class="s">'+esc(st)+'</span></button>';
+          });
+          row.innerHTML=html;
+          nodes=Array.prototype.slice.call(document.querySelectorAll('.node'));
+          nodes.forEach(function(n){n.addEventListener('click',function(){show(n.getAttribute('data-key'));});});
+        }
+        details['rumi']={t:'Rumi · 主 Agent（店长）',d:'你平时直接对话的这位就是店长本人：接你的话、做判断、派活、验收、最后向你汇报。它统筹公众号、抖音、视频号等日常事务，需要人手时把活拆成工单扔进工单池；子 Agent 干完的活必须经它交叉对账验收，才算数、才向你汇报。红线也归它守：发布、花钱、对外发消息这类动作子 Agent 一律不许碰，只能它来、且要你拍板。在工作台聊天页左侧栏里排第一位的就是它，聊天约 1 分钟回一轮。'};
+        details['muse-1']=details['muse1'];
+        subs.forEach(function(a){
+          details[a.id]={t:a.name+' · 子 Agent（员工）',d:'职责：每 30 分钟轮询工单池领单执行，结果写回等调度者验收；聊天约 1 分钟一轮；三条红线：不发布、不代发消息、不花钱。Tailscale 地址 '+(a.tailnet||'待补充')+'。当前状态：'+(a.statusText||'—')+'。'};
+        });
+        var plate=subs.map(function(a){return a.name+' 是 '+(a.tailnet||'待补充');}).join('，');
+        details['tailscale'].d='给自家设备拉的一张只有自己人能进的局域网，不管人离多远都像在同一个屋里。盒子和子 Agent 都在网里，用 100.x 开头的内部地址互相直连：子 Agent 传工单、你进 CasaOS 后台，走的都是这条线，外人连门都看不见。盒子的安全加固也建立在它之上——只认专线内的密钥登录，密码登录已关。成员门牌：'+plate+'。';
+        show(currentKey);
+      })
+      .catch(function(){});
+  }
   show('box');
+  loadAgents();
 
   // flow tabs
   var tabs = Array.prototype.slice.call(document.querySelectorAll('.flow-tabs button'));

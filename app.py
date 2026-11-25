@@ -61,13 +61,65 @@ CHAT_DIR = os.environ.get("WB_CHAT_DIR", os.path.join(BASE, "chat"))  # Agent �
 CHAT_HISTORY_DIR = os.path.join(CHAT_DIR, "history")
 CHAT_LOCK = os.path.join(CHAT_DIR, "history.lock")
 # Agent 名单：(id, 显示名, 首字母, 头像 class, 职责说明)
-# 按你的实际情况改：主 Agent 一个，子 Agent 若干；子 Agent 每 30 分钟来工单池领一次单
-CHAT_AGENTS = [
+# 主 Agent（rumi）与平级调度者（muse-1）固定；子 Agent 从 agents/ 工位子文件夹动态读，
+# 每个子文件夹一个子 Agent，按目录创建时间排（先建的在前，新成员排最后）。
+# 新成员到岗只需建 agents/<id>/（status.json + quota.json + heartbeat.json），
+# 聊天列表、指挥中心、原理页三处自动出现，不用再改代码。
+FIXED_CHAT_AGENTS = [
     ("rumi", "Rumi", "R", "rumi", "主 Agent · 拆单、验收、汇报"),
-    ("Lei", "Lei", "L", "muse", "子 Agent · 领单执行"),
-    ("muse-2", "muse-2", "2", "m2", "子 Agent · 领单执行"),
+    ("muse-1", "muse-1", "1", "m1", "平级调度者"),
 ]
 BUS_DIR = os.environ.get("WB_BUS_DIR", os.path.join(BASE, "agent-bus"))  # 子 Agent 状态目录（工单池状态文件放这里）
+
+_SUB_AGENT_CACHE = {"ts": 0.0, "subs": None}
+
+def scan_sub_agents():
+    """读 agent-bus/agents/ 下的子文件夹：每个子文件夹一个子 Agent。
+    读 status.json（角色/状态/尾网）与 quota.json（额度）；15 秒缓存。"""
+    now = time.time()
+    if _SUB_AGENT_CACHE["subs"] is not None and now - _SUB_AGENT_CACHE["ts"] < 15:
+        return _SUB_AGENT_CACHE["subs"]
+    out = []
+    base = os.path.join(BUS_DIR, "agents")
+    try:
+        names = os.listdir(base)
+    except Exception:
+        names = []
+    dirs = []
+    for n in names:
+        p = os.path.join(base, n)
+        try:
+            if os.path.isdir(p):
+                dirs.append((os.stat(p).st_mtime, n))
+        except Exception:
+            pass
+    dirs.sort()
+    for _, n in dirs:
+        st = {}
+        try:
+            with open(os.path.join(base, n, "status.json"), encoding="utf-8") as f:
+                st = json.load(f) or {}
+        except Exception:
+            pass
+        q = {}
+        try:
+            with open(os.path.join(base, n, "quota.json"), encoding="utf-8") as f:
+                q = json.load(f) or {}
+        except Exception:
+            pass
+        out.append({"id": n, "name": n, "role": st.get("role") or "子 Agent",
+                    "status": st.get("status") or "待签到", "tailnet": st.get("tailnet"),
+                    "last_seen": st.get("last_seen"), "quota": q})
+    _SUB_AGENT_CACHE["ts"] = now
+    _SUB_AGENT_CACHE["subs"] = out
+    return out
+
+def chat_agent_list():
+    """聊天名单：固定主 Agent + 平级调度者 + 工位子文件夹里的子 Agent（新成员排最后）。"""
+    out = list(FIXED_CHAT_AGENTS)
+    for s in scan_sub_agents():
+        out.append((s["id"], s["name"], (s["name"][:1] or "?").upper(), s["id"], "子 Agent · 领单执行"))
+    return out
 
 # 18 个板块：(分组, 板块id, 标题, 副标题, 数据来源)
 GROUPS = [("world", "天下"), ("career", "程序员职业"), ("family", "家庭")]
@@ -496,7 +548,7 @@ def _chat_watch_loop():
     last_stream = {}  # agent -> (stream_id, text)
     while True:
         try:
-            for aid, _n, _i, _c, _r in CHAT_AGENTS:
+            for aid, _n, _i, _c, _r in chat_agent_list():
                 try:
                     st = os.stat(chat_history_path(aid))
                     key = (st.st_mtime, st.st_size)
@@ -558,8 +610,8 @@ def chat_agent_status():
         quotas = {}
     # per-agent quota files: each sub-agent writes its own workspace file
     # /opt/shared/agent-bus/agents/<aid>/quota.json ; present + valid wins
-    bus_agents = "/opt/shared/agent-bus/agents"
-    for _aid in ("Lei", "muse-1", "muse-2", "muse-3", "muse-4"):
+    bus_agents = os.path.join(BUS_DIR, "agents")
+    for _aid in ["muse-1"] + [s["id"] for s in scan_sub_agents()]:
         try:
             with open(os.path.join(bus_agents, _aid, "quota.json"), encoding="utf-8") as f:
                 _q = json.load(f)
@@ -569,7 +621,8 @@ def chat_agent_status():
                 quotas[_aid] = _base
         except Exception:
             pass
-    for aid, name, initial, cls, role in CHAT_AGENTS:
+    ws_map = {s["id"]: s for s in scan_sub_agents()}
+    for aid, name, initial, cls, role in chat_agent_list():
         status, status_text = "poll", "轮询模式 · 约 1 分钟取一次"
         if aid == "Lei":
             status, status_text = "relay", "中继模式 · 约 1 分钟回一次"
@@ -588,18 +641,22 @@ def chat_agent_status():
             else:
                 status, status_text = "offline", "未接入 · 先在它那边说一声"
         else:
-            try:
-                with open(os.path.join(BUS_DIR, aid, "status.json"), encoding="utf-8") as f:
-                    st = json.load(f)
-                _ls = st.get("last_seen", "").replace("Z", "+00:00")
-                _ls = re.sub(r"([+-]\d{2})(\d{2})$", r"\1:\2", _ls)
-                dt = datetime.fromisoformat(_ls)
-                if now - dt.timestamp() > 45 * 60:
+            _ws = ws_map.get(aid) or {}
+            if _ws.get("status") == "待签到":
+                status, status_text = "offline", "待签到 · 未到岗"
+            else:
+                try:
+                    with open(os.path.join(BUS_DIR, aid, "status.json"), encoding="utf-8") as f:
+                        st = json.load(f)
+                    _ls = st.get("last_seen", "").replace("Z", "+00:00")
+                    _ls = re.sub(r"([+-]\d{2})(\d{2})$", r"\1:\2", _ls)
+                    dt = datetime.fromisoformat(_ls)
+                    if now - dt.timestamp() > 45 * 60:
+                        status = "offline"
+                        status_text = "离线 · 上次在线 " + dt.strftime("%m-%d %H:%M")
+                except Exception:
                     status = "offline"
-                    status_text = "离线 · 上次在线 " + dt.strftime("%m-%d %H:%M")
-            except Exception:
-                status = "offline"
-                status_text = "离线 · 未见心跳"
+                    status_text = "离线 · 未见心跳"
         msgs = chat_load(aid)
         last_time, last_text = "", ""
         if msgs:
@@ -633,6 +690,7 @@ def chat_agent_status():
                     "video": "/avatar-" + aid + ".mp4?v=4" if aid in ("muse", "muse-1", "muse-2", "muse-3", "muse-4") else "",
                     "quota": qp, "quotaAsOf": qa, "quotaReset": qr,
                     "role": role, "status": status, "statusText": status_text,
+                    "tailnet": (ws_map.get(aid) or {}).get("tailnet"),
                     "time": last_time, "lastText": last_text})
     return out
 
@@ -3052,7 +3110,7 @@ class Handler(BaseHTTPRequestHandler):
             if u.path == "/api/chat/messages":
                 q = parse_qs(u.query)
                 agent = (q.get("agent") or [""])[0]
-                if agent not in [a[0] for a in CHAT_AGENTS]:
+                if agent not in [a[0] for a in chat_agent_list()]:
                     self.send_json({"ok": False, "msg": "unknown agent"}, 400); return
                 ru, ra = chat_read_state(agent)
                 self.send_json({"ok": True, "messages": chat_load(agent), "read": {"user": ru, "agent": ra}}); return
@@ -3067,7 +3125,7 @@ class Handler(BaseHTTPRequestHandler):
                 q = CHAT_HUB.subscribe()
                 try:
                     hello = {"typing": {}, "read": {}, "stream": {}}
-                    for aid, _n, _i, _c, _r in CHAT_AGENTS:
+                    for aid, _n, _i, _c, _r in chat_agent_list():
                         hello["typing"][aid] = chat_typing_state(aid)[0]
                         ru, ra = chat_read_state(aid)
                         hello["read"][aid] = {"user": ru, "agent": ra}
@@ -3333,7 +3391,7 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json({"ok": False, "msg": "bad json"}, 400); return
             agent = payload.get("agent", "")
             text = (payload.get("text", "") or "").strip()
-            if agent not in [a[0] for a in CHAT_AGENTS]:
+            if agent not in [a[0] for a in chat_agent_list()]:
                 self.send_json({"ok": False, "msg": "unknown agent"}, 400); return
             if not text or len(text) > 2000:
                 self.send_json({"ok": False, "msg": "empty or too long"}, 400); return
@@ -3347,7 +3405,7 @@ class Handler(BaseHTTPRequestHandler):
             except Exception:
                 self.send_json({"ok": False, "msg": "bad json"}, 400); return
             agent = payload.get("agent", "")
-            if agent not in [a[0] for a in CHAT_AGENTS]:
+            if agent not in [a[0] for a in chat_agent_list()]:
                 self.send_json({"ok": False, "msg": "unknown agent"}, 400); return
             try:
                 up_to = int(payload.get("up_to") or 0)
@@ -3363,7 +3421,7 @@ class Handler(BaseHTTPRequestHandler):
             except Exception:
                 self.send_json({"ok": False, "msg": "bad json"}, 400); return
             agent = payload.get("agent", "")
-            if agent not in [a[0] for a in CHAT_AGENTS]:
+            if agent not in [a[0] for a in chat_agent_list()]:
                 self.send_json({"ok": False, "msg": "unknown agent"}, 400); return
             filename = os.path.basename(str(payload.get("filename") or payload.get("name") or "file"))[:80] or "file"
             mime = (payload.get("mime") or "").strip()

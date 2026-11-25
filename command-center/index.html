@@ -71,7 +71,7 @@ button{font-family:inherit;cursor:pointer}
 .agent:hover{border-color:var(--teal)}
 .agent.active{border-color:var(--teal);background:linear-gradient(0deg, color-mix(in srgb, var(--teal-bg) 35%, transparent), transparent)}
 .avatar{width:44px;height:44px;border-radius:11px;display:grid;place-items:center;font-weight:900;font-size:13px;color:#fff;flex-shrink:0;position:relative}
-.av-main{background:#0f766e}.av-1{background:#334155}.av-2{background:#0e7490}.av-3{background:#15803d}.av-4{background:#b45309}
+.av-main{background:#0f766e}.av-1{background:#334155}.av-2{background:#0e7490}.av-3{background:#15803d}.av-4{background:#b45309}.av-5{background:#7c3aed}.av-6{background:#be185d}
 .avatar::after{content:"";position:absolute;right:-2px;bottom:-2px;width:11px;height:11px;border-radius:50%;border:2px solid var(--card);background:#22c55e}
 .avatar.warn::after{background:#f59e0b}
 .agent-main{flex:1;min-width:0}
@@ -150,8 +150,8 @@ button{font-family:inherit;cursor:pointer}
 
   <!-- KPI -->
   <section class="kpis" aria-label="概览">
-    <div class="kpi"><div><label>Agent 总数</label><div class="num">5</div><div class="sub">主调度 + muse-1 ~ muse-4</div></div><div class="icon i-teal">⬢</div></div>
-    <div class="kpi"><div><label>子 Agent 池</label><div class="num">3 <span style="font-size:13px;color:var(--muted);font-weight:700">/ 30 分钟轮询</span></div><div class="sub">muse-2 · muse-3 · muse-4 领单执行</div></div><div class="icon i-green">✓</div></div>
+    <div class="kpi"><div><label>Agent 总数</label><div class="num" id="kpiTotal">5</div><div class="sub" id="kpiTotalSub">主调度 + muse-1 ~ muse-4</div></div><div class="icon i-teal">⬢</div></div>
+    <div class="kpi"><div><label>子 Agent 池</label><div class="num" id="kpiPool">3 <span style="font-size:13px;color:var(--muted);font-weight:700">/ 30 分钟轮询</span></div><div class="sub" id="kpiPoolSub">muse-2 · muse-3 · muse-4 领单执行</div></div><div class="icon i-green">✓</div></div>
     <div class="kpi"><div><label>调度者</label><div class="num">2</div><div class="sub">主 Agent + muse-1，各验自己派的单</div></div><div class="icon i-blue">◎</div></div>
     <div class="kpi"><div><label>聊天中继</label><div class="num" style="font-size:19px;padding-top:4px">工作日 09:30–21:00</div><div class="sub">12:00–13:00 午休暂停 · 约 1 分钟一轮</div></div><div class="icon i-amber">◷</div></div>
   </section>
@@ -162,7 +162,7 @@ button{font-family:inherit;cursor:pointer}
     <section class="panel" aria-label="Agent 状态">
       <div class="panel-head"><div><h2>● Agent 状态</h2><p>点任意 Agent 看职责与轮询细节</p></div><span class="badge badge-green" id="onlineBadge">加载中…</span></div>
       <div class="filters" role="group" aria-label="筛选">
-        <button class="active" data-f="all">全部 5</button>
+        <button class="active" data-f="all" id="filterAll">全部 5</button>
         <button data-f="dispatch">调度者</button>
         <button data-f="worker">子 Agent</button>
       </div>
@@ -203,22 +203,22 @@ button{font-family:inherit;cursor:pointer}
 
     <!-- 3 CHAT -->
     <section class="panel" aria-label="聊天">
-      <div class="panel-head"><div><h2>💬 聊天通道</h2><p>工作台 Web 聊天 · 左侧栏 5 个 muse 一屏全显，撑满聊天区、无整页滚动</p></div><span class="badge badge-amber">中继制</span></div>
+      <div class="panel-head"><div><h2>💬 聊天通道</h2><p>工作台 Web 聊天 · 左侧栏 <span id="chatCount">5</span> 个入口一屏全显，撑满聊天区、无整页滚动</p></div><span class="badge badge-amber">中继制</span></div>
       <div class="panel-body">
         <div class="chat-list">
           <div class="chat-item"><div class="ic">🌐</div><div><b>工作台 Web 聊天 <span class="tag tag-on">主入口</span></b><p>玩客云 <span class="mono">/opt/xinwen-workbench</span> · 路径 <span class="mono">/chat</span> · 用户消息靠右 · 支持发图片（经图床转链接，单张 ≤10MB，链接公开、勿传隐私图）</p></div></div>
           <div class="chat-item"><div class="ic">🔁</div><div><b>中继 cron · chat-relay-muse</b><p>工作日 09:30–21:00 运行，约 1 分钟一轮；12:00–13:00 午休暂停。非工作时段消息等下一时段处理。</p></div></div>
-          <div class="chat-item"><div class="ic">👥</div><div><b>会话成员</b><p>主 Agent、muse-1、muse-2、muse-3、muse-4 —— 五个入口都在同一聊天页左侧栏。</p></div></div>
+          <div class="chat-item"><div class="ic">👥</div><div><b>会话成员</b><p id="chatMembers">主 Agent、muse-1、muse-2、muse-3、muse-4 —— 五个入口都在同一聊天页左侧栏。</p></div></div>
         </div>
 
         <div class="schedule">
           <table>
             <thead><tr><th>对象</th><th>聊天轮询</th><th>状态</th></tr></thead>
-            <tbody>
+            <tbody id="chatScheduleBody">
               <tr><td>中继时段</td><td>工作日 09:30–21:00<br><span style="color:var(--muted)">12:00–13:00 午休暂停</span></td><td><span class="tag tag-on" id="relayTag">—</span></td></tr>
-              <tr id="chatRowM1"><td>muse-1</td><td>1 分钟一轮</td><td><span class="tag tag-on">运行</span></td></tr>
+              <tr><td>muse-1</td><td>1 分钟一轮</td><td><span class="tag tag-on">运行</span></td></tr>
               <tr><td>muse-2 / muse-3</td><td>1 分钟一轮<br><span style="color:var(--muted)">工单仍 30 分钟</span></td><td><span class="tag tag-on">已改</span></td></tr>
-              <tr id="chatRowM4"><td>muse-4</td><td>1 分钟一轮<br><span style="color:var(--muted)">工单仍 30 分钟</span></td><td><span class="tag tag-on">已改</span></td></tr>
+              <tr><td>muse-4</td><td>1 分钟一轮<br><span style="color:var(--muted)">工单仍 30 分钟</span></td><td><span class="tag tag-on">已改</span></td></tr>
             </tbody>
           </table>
         </div>
@@ -244,14 +244,71 @@ button{font-family:inherit;cursor:pointer}
 </div>
 
 <script>
+/* 固定文案：主 Agent 与平级调度者（不在 agents/ 工位目录里）；子 Agent 由接口动态生成 */
+var FIXED={
+  rumi:{id:'rumi',name:'主 Agent',role:'主调度者',type:'dispatch',cls:'av-main',init:'主',ip:'本机 · 指挥',job:'下工单、收单验货、交叉对账、最终汇报；公众号草稿推送与拍板',detail:'<b>主 Agent：</b>整个体系的总调度。负责把活拆成工单放进池子，子 Agent 交回 result 后由它对账验收，验过才向你汇报。急活不派单、自己干。'},
+  'muse-1':{id:'muse-1',name:'muse-1',role:'平级调度者',type:'dispatch',cls:'av-1',init:'M1',ip:'调度节点',job:'可独立拆单派活，只验收自己派的单；在自己对话里向你汇总；兼第二个公众号运营',detail:'<b>muse-1：</b>平级调度者，协议 v1.1。双汇报线：它派的单由它汇总，主 Agent 派的单由主 Agent 汇总，互不代验。聊天轮询已改 1 分钟一轮。'}
+};
+var SUB_CLS=['av-2','av-3','av-4','av-5','av-6'];
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function subEntry(a,i){
+  var cls=SUB_CLS[i%SUB_CLS.length];
+  var ip=a.tailnet||'待补充';
+  var online=a.status==='poll'||a.status==='relay';
+  var quotaTxt=(a.quota!=null)?('免费额度 '+a.quota+'%'):'额度待签到后上报';
+  return {id:a.id,name:a.name,role:'子 Agent',type:'worker',cls:cls,init:(a.initial||a.name.slice(0,1)||'?'),
+    ip:ip,poll:a.statusText||'',warn:!online,
+    job:'领单执行；工单 30 分钟轮询，聊天约 1 分钟一轮',
+    detail:'<b>'+esc(a.name)+'：</b>子 Agent，Tailscale '+esc(ip)+'。'+esc(a.statusText||'')+'；'+esc(quotaTxt)+'。三条红线：不发布、不代发消息、不花钱。'};
+}
+function buildAgents(list){
+  var out=[], subIdx=0;
+  list.forEach(function(a){
+    if(FIXED[a.id]){
+      var f=FIXED[a.id];
+      out.push({id:f.id,name:f.name,role:f.role,type:f.type,cls:f.cls,init:f.init,ip:f.ip,poll:a.statusText||'',warn:(a.status==='offline'),job:f.job,detail:f.detail});
+    }else{
+      out.push(subEntry(a,subIdx++));
+    }
+  });
+  return out;
+}
+function updateCounts(){
+  var total=agents.length;
+  var workers=agents.filter(function(a){return a.type==='worker';});
+  var wnames=workers.map(function(a){return a.name;});
+  var el=document.getElementById('kpiTotal'); if(el)el.textContent=total;
+  var el2=document.getElementById('kpiTotalSub'); if(el2)el2.textContent='主 Agent + muse-1 + '+workers.length+' 个子 Agent';
+  var el3=document.getElementById('kpiPool'); if(el3)el3.innerHTML=workers.length+' <span style="font-size:13px;color:var(--muted);font-weight:700">/ 30 分钟轮询</span>';
+  var el4=document.getElementById('kpiPoolSub'); if(el4)el4.textContent=(wnames.join(' · ')||'—')+' 领单执行';
+  var el5=document.getElementById('filterAll'); if(el5)el5.textContent='全部 '+total;
+  var el6=document.getElementById('chatCount'); if(el6)el6.textContent=total;
+  var el7=document.getElementById('chatMembers');
+  if(el7)el7.textContent=agents.map(function(a){return a.name;}).join('、')+' —— '+total+' 个入口都在同一聊天页左侧栏。';
+  var online=agents.filter(function(a){return !a.warn;}).length;
+  var badge=document.getElementById('onlineBadge');
+  if(badge){badge.textContent=online+' 在线 · '+(agents.length-online)+' 离线';badge.className='badge '+(online===agents.length?'badge-green':'badge-amber');}
+}
+function buildSchedule(list){
+  var body=document.getElementById('chatScheduleBody'); if(!body)return;
+  var html='<tr><td>中继时段</td><td>工作日 09:30–21:00<br><span style="color:var(--muted)">12:00–13:00 午休暂停</span></td><td><span class="tag tag-on" id="relayTag">—</span></td></tr>';
+  list.forEach(function(a){
+    if(a.id==='rumi')return;
+    var poll=(a.id==='muse-1')?'1 分钟一轮':'1 分钟一轮<br><span style="color:var(--muted)">工单仍 30 分钟</span>';
+    var badge, on;
+    if(a.status==='poll'||a.status==='relay'){badge='运行';on=true;}
+    else if(a.statusText&&a.statusText.indexOf('待签到')>-1){badge='待签到';on=false;}
+    else{badge='未接入';on=false;}
+    html+='<tr><td>'+esc(a.name)+'</td><td>'+poll+'</td><td><span class="tag '+(on?'tag-on':'tag-wait')+'">'+badge+'</span></td></tr>';
+  });
+  body.innerHTML=html;
+}
+/* 初始名单是兜底：接口一到就按 agents/ 工位目录重建 */
 var agents=[
-  {id:'main',name:'主 Agent',role:'主调度者',type:'dispatch',cls:'av-main',init:'主',ip:'本机 · 指挥',poll:'即时',job:'下工单、收单验货、交叉对账、最终汇报；公众号草稿推送与拍板',detail:'<b>主 Agent：</b>整个体系的总调度。负责把活拆成工单放进池子，子 Agent 交回 result 后由它对账验收，验过才向你汇报。急活不派单、自己干。'},
-  {id:'m1',name:'muse-1',role:'平级调度者',type:'dispatch',cls:'av-1',init:'M1',ip:'调度节点',poll:'聊天 1m',job:'可独立拆单派活，只验收自己派的单；在自己对话里向你汇总；兼第二个公众号运营',detail:'<b>muse-1：</b>平级调度者，协议 v1.1。双汇报线：它派的单由它汇总，主 Agent 派的单由主 Agent 汇总，互不代验。聊天轮询已改 1 分钟一轮。'},
-  {id:'m2',name:'muse-2',role:'子 Agent',type:'worker',cls:'av-2',init:'M2',ip:'100.x.x.x',poll:'工单 30m · 聊天 1m',job:'领单执行；X 账号登录态已核验通过，可承接 X 一手信息类工单',detail:'<b>muse-2：</b>Tailscale 100.x.x.x。独立 Gitee 令牌读写已实测。聊天轮询已改 1 分钟一轮，工单轮询保持 30 分钟。'},
-  {id:'m3',name:'muse-3',role:'子 Agent',type:'worker',cls:'av-3',init:'M3',ip:'100.x.x.x',poll:'工单 30m · 聊天 1m',job:'领单执行；聊天轮询已改 1 分钟一轮',detail:'<b>muse-3：</b>Tailscale 100.x.x.x。独立 Gitee 令牌读写已实测。与 muse-2 同为第一批改成 1 分钟聊天轮询的子 Agent。'},
-  {id:'m4',name:'muse-4',role:'子 Agent',type:'worker',cls:'av-4',init:'M4',ip:'100.x.x.x',poll:'工单 30m · 聊天 1m',job:'后加入子 Agent 池；聊天轮询已改 1 分钟一轮，工单轮询保持 30 分钟',detail:'<b>muse-4：</b>Tailscale 100.x.x.x，最新加入。聊天轮询已改 1 分钟一轮（新任务 muse-4-chat-poll-1min，首轮已跑通），工单轮询保持 30 分钟。'}
+  {id:'rumi',name:'主 Agent',role:'主调度者',type:'dispatch',cls:'av-main',init:'主',ip:'本机 · 指挥',poll:'即时',job:'下工单、收单验货、交叉对账、最终汇报；公众号草稿推送与拍板',detail:'<b>主 Agent：</b>整个体系的总调度。负责把活拆成工单放进池子，子 Agent 交回 result 后由它对账验收，验过才向你汇报。急活不派单、自己干。'},
+  {id:'muse-1',name:'muse-1',role:'平级调度者',type:'dispatch',cls:'av-1',init:'M1',ip:'调度节点',poll:'聊天 1m',job:'可独立拆单派活，只验收自己派的单；在自己对话里向你汇总；兼第二个公众号运营',detail:'<b>muse-1：</b>平级调度者，协议 v1.1。双汇报线：它派的单由它汇总，主 Agent 派的单由主 Agent 汇总，互不代验。聊天轮询已改 1 分钟一轮。'}
 ];
-var list=document.getElementById('agentList'), detail=document.getElementById('agentDetail'), cur='main', filter='all';
+var list=document.getElementById('agentList'), detail=document.getElementById('agentDetail'), cur='rumi', filter='all';
 function render(){
   list.innerHTML='';
   agents.filter(function(a){return filter==='all'||a.type===filter}).forEach(function(a){
@@ -283,43 +340,18 @@ function tick(){
     if(tag){ tag.textContent=active?'运行中':'时段外 · 待下一时段'; tag.className='tag '+(active?'tag-on':'tag-wait'); }
   }catch(e){}
 }
-/* ---- 实时状态：调工作台同源接口 /api/chat/agents，每 30 秒刷新 ---- */
-var API_TO_PAGE={muse:'main','muse-1':'m1','muse-2':'m2','muse-3':'m3','muse-4':'m4'};
-/* 聊天通道表也跟随接口刷新，免得静态文案又变旧 */
-function setChatRow(rowId,pollHtml,badgeText,badgeOn){
-  var row=document.getElementById(rowId); if(!row)return;
-  var tds=row.getElementsByTagName('td'); if(tds.length<3)return;
-  tds[1].innerHTML=pollHtml;
-  var tag=tds[2].querySelector('.tag');
-  if(tag){ tag.textContent=badgeText; tag.className='tag '+(badgeOn?'tag-on':'tag-wait'); }
-}
+/* ---- 实时状态：调工作台同源接口 /api/chat/agents，每 30 秒刷新 ----
+   名单不再写死：主 Agent + muse-1 固定，子 Agent 由接口（agents/ 工位目录）动态来；
+   新成员建工位目录后自动出现，排最后。KPI、筛选、会话成员、聊天轮询表都跟随刷新。 */
 function loadLive(){
   fetch('/api/chat/agents',{credentials:'same-origin'})
     .then(function(r){return r.json();})
     .then(function(d){
       if(!d||!d.ok||!Array.isArray(d.agents))return;
-      var online=0;
-      d.agents.forEach(function(a){
-        var pid=API_TO_PAGE[a.id]; if(!pid)return;
-        var ag=null; agents.forEach(function(x){if(x.id===pid)ag=x;});
-        if(!ag)return;
-        if(a.statusText)ag.poll=a.statusText;
-        ag.warn=(a.status==='offline');
-        if(a.status!=='offline')online++;
-        if(pid==='m1'&&a.statusText){
-          if(a.statusText.indexOf('1 分钟')>-1)setChatRow('chatRowM1','1 分钟一轮','运行',true);
-          else if(a.statusText.indexOf('10 分钟')>-1)setChatRow('chatRowM1','约 10 分钟一轮','运行',true);
-        }
-        if(pid==='m4'&&a.statusText){
-          if(a.statusText.indexOf('1 分钟')>-1)setChatRow('chatRowM4','1 分钟一轮<br><span style="color:var(--muted)">工单仍 30 分钟</span>','已改',true);
-          else if(a.statusText.indexOf('10 分钟')>-1)setChatRow('chatRowM4','约 10 分钟一轮','待确认',false);
-        }
-      });
-      var badge=document.getElementById('onlineBadge');
-      if(badge){
-        badge.textContent=online+' 在线 · '+(agents.length-online)+' 离线';
-        badge.className='badge '+(online===agents.length?'badge-green':'badge-amber');
-      }
+      agents=buildAgents(d.agents);
+      if(!agents.some(function(a){return a.id===cur;}))cur=agents.length?agents[0].id:'rumi';
+      updateCounts();
+      buildSchedule(d.agents);
       render();
     })
     .catch(function(){});
