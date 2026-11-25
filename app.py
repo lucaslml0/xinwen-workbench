@@ -691,7 +691,7 @@ def chat_agent_status():
                 pass
 
         out.append({"id": aid, "name": name, "initial": initial, "cls": cls,
-                    "img": "/avatar-" + aid + ".png?v=4",
+                    "img": "/avatar-" + aid + ".png?v=5",
                     "video": "/avatar-" + aid + ".mp4?v=4" if aid in ("muse", "muse-1", "muse-2", "muse-3", "muse-4") else "",
                     "quota": qp, "quotaAsOf": qa, "quotaReset": qr, "quotaTokens": qt,
                     "role": role, "status": status, "statusText": status_text,
@@ -3300,7 +3300,7 @@ class Handler(BaseHTTPRequestHandler):
             self.wfile.write(img)
             return
         if u.path.startswith("/avatar-") and u.path.endswith(".png"):
-            allowed = ("avatar-Lei.png", "avatar-muse.png", "avatar-muse-1.png", "avatar-muse-2.png", "avatar-muse-3.png", "avatar-muse-4.png")
+            allowed = ("avatar-rumi.png", "avatar-Lei.png", "avatar-muse.png", "avatar-muse-1.png", "avatar-muse-2.png", "avatar-muse-3.png", "avatar-muse-4.png")
             fn = u.path[1:]
             if fn not in allowed:
                 self.send_json({"ok": False, "msg": "not found"}, 404); return
