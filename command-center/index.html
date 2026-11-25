@@ -71,6 +71,7 @@ button{font-family:inherit;cursor:pointer}
 .agent:hover{border-color:var(--teal)}
 .agent.active{border-color:var(--teal);background:linear-gradient(0deg, color-mix(in srgb, var(--teal-bg) 35%, transparent), transparent)}
 .avatar{width:44px;height:44px;border-radius:11px;display:grid;place-items:center;font-weight:900;font-size:13px;color:#fff;flex-shrink:0;position:relative}
+.avatar img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:11px}
 .av-main{background:#0f766e}.av-1{background:#334155}.av-2{background:#0e7490}.av-3{background:#15803d}.av-4{background:#b45309}.av-5{background:#7c3aed}.av-6{background:#be185d}
 .avatar::after{content:"";position:absolute;right:-2px;bottom:-2px;width:11px;height:11px;border-radius:50%;border:2px solid var(--card);background:#22c55e}
 .avatar.warn::after{background:#f59e0b}
@@ -256,7 +257,7 @@ function subEntry(a,i){
   var ip=a.tailnet||'待补充';
   var online=a.status==='poll'||a.status==='relay';
   var quotaTxt=(a.quota!=null)?('免费额度 '+a.quota+'%'):'额度待签到后上报';
-  return {id:a.id,name:a.name,role:'子 Agent',type:'worker',cls:cls,init:(a.initial||a.name.slice(0,1)||'?'),
+  return {id:a.id,name:a.name,role:'子 Agent',type:'worker',cls:cls,init:(a.initial||a.name.slice(0,1)||'?'),img:(a.hasAvatar&&a.img)?a.img:'',
     ip:ip,poll:a.statusText||'',warn:!online,
     job:'领单执行；工单 30 分钟轮询，聊天约 1 分钟一轮',
     detail:'<b>'+esc(a.name)+'：</b>子 Agent，Tailscale '+esc(ip)+'。'+esc(a.statusText||'')+'；'+esc(quotaTxt)+'。三条红线：不发布、不代发消息、不花钱。'};
@@ -266,7 +267,7 @@ function buildAgents(list){
   list.forEach(function(a){
     if(FIXED[a.id]){
       var f=FIXED[a.id];
-      out.push({id:f.id,name:f.name,role:f.role,type:f.type,cls:f.cls,init:f.init,ip:f.ip,poll:a.statusText||'',warn:(a.status==='offline'),job:f.job,detail:f.detail});
+      out.push({id:f.id,name:f.name,role:f.role,type:f.type,cls:f.cls,init:f.init,img:(a.hasAvatar&&a.img)?a.img:'',ip:f.ip,poll:a.statusText||'',warn:(a.status==='offline'),job:f.job,detail:f.detail});
     }else{
       out.push(subEntry(a,subIdx++));
     }
@@ -305,15 +306,15 @@ function buildSchedule(list){
 }
 /* 初始名单是兜底：接口一到就按 agents/ 工位目录重建 */
 var agents=[
-  {id:'rumi',name:'主 Agent',role:'主调度者',type:'dispatch',cls:'av-main',init:'主',ip:'本机 · 指挥',poll:'即时',job:'下工单、收单验货、交叉对账、最终汇报；公众号草稿推送与拍板',detail:'<b>主 Agent：</b>整个体系的总调度。负责把活拆成工单放进池子，子 Agent 交回 result 后由它对账验收，验过才向你汇报。急活不派单、自己干。'},
-  {id:'muse-1',name:'muse-1',role:'平级调度者',type:'dispatch',cls:'av-1',init:'M1',ip:'调度节点',poll:'聊天 1m',job:'可独立拆单派活，只验收自己派的单；在自己对话里向你汇总；兼第二个公众号运营',detail:'<b>muse-1：</b>平级调度者，协议 v1.1。双汇报线：它派的单由它汇总，主 Agent 派的单由主 Agent 汇总，互不代验。聊天轮询已改 1 分钟一轮。'}
+  {id:'rumi',name:'主 Agent',role:'主调度者',type:'dispatch',cls:'av-main',init:'主',img:'',ip:'本机 · 指挥',poll:'即时',job:'下工单、收单验货、交叉对账、最终汇报；公众号草稿推送与拍板',detail:'<b>主 Agent：</b>整个体系的总调度。负责把活拆成工单放进池子，子 Agent 交回 result 后由它对账验收，验过才向你汇报。急活不派单、自己干。'},
+  {id:'muse-1',name:'muse-1',role:'平级调度者',type:'dispatch',cls:'av-1',init:'M1',img:'',ip:'调度节点',poll:'聊天 1m',job:'可独立拆单派活，只验收自己派的单；在自己对话里向你汇总；兼第二个公众号运营',detail:'<b>muse-1：</b>平级调度者，协议 v1.1。双汇报线：它派的单由它汇总，主 Agent 派的单由主 Agent 汇总，互不代验。聊天轮询已改 1 分钟一轮。'}
 ];
 var list=document.getElementById('agentList'), detail=document.getElementById('agentDetail'), cur='rumi', filter='all';
 function render(){
   list.innerHTML='';
   agents.filter(function(a){return filter==='all'||a.type===filter}).forEach(function(a){
     var b=document.createElement('button'); b.className='agent'+(a.id===cur?' active':''); b.setAttribute('aria-label',a.name);
-    b.innerHTML='<div class="avatar '+a.cls+(a.warn?' warn':'')+'">'+a.init+'</div><div class="agent-main"><strong>'+a.name+' <em>'+a.role+'</em></strong><p>'+a.job+'</p><div class="agent-meta"><span>IP <b class="mono">'+a.ip+'</b></span><span>轮询 <b>'+a.poll+'</b></span></div></div>';
+    b.innerHTML='<div class="avatar '+a.cls+(a.warn?' warn':'')+'">'+(a.img?'<img src="'+esc(a.img)+'" alt="" onerror="this.remove()">':'')+a.init+'</div><div class="agent-main"><strong>'+a.name+' <em>'+a.role+'</em></strong><p>'+a.job+'</p><div class="agent-meta"><span>IP <b class="mono">'+a.ip+'</b></span><span>轮询 <b>'+a.poll+'</b></span></div></div>';
     b.onclick=function(){cur=a.id; render();};
     list.appendChild(b);
   });

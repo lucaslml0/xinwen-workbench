@@ -694,6 +694,7 @@ def chat_agent_status():
                     "img": "/avatar-" + aid + ".png?v=5",
                     "video": "/avatar-" + aid + ".mp4?v=4" if aid in ("muse", "muse-1", "muse-2", "muse-3", "muse-4") else "",
                     "quota": qp, "quotaAsOf": qa, "quotaReset": qr, "quotaTokens": qt,
+                    "hasAvatar": os.path.exists(os.path.join(BASE, "avatar-" + aid + ".png")),
                     "role": role, "status": status, "statusText": status_text,
                     "tailnet": (ws_map.get(aid) or {}).get("tailnet"),
                     "time": last_time, "lastText": last_text})
