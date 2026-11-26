@@ -46,7 +46,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hira
 .msg a{color:var(--accent)}
 #typing{padding:0 16px 6px;color:var(--muted);font-size:13px;min-height:20px}
 #composer{padding:12px 16px;background:var(--card);border-top:1px solid var(--border);display:flex;gap:10px;align-items:flex-end}
-#input{flex:1;border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-size:15px;font-family:inherit;resize:none;min-height:44px;max-height:140px}
+#inputWrap{flex:1;display:flex;flex-direction:column;min-width:0}
+#resizeHandle{height:14px;flex-shrink:0;cursor:ns-resize;touch-action:none;display:flex;align-items:center;justify-content:center;user-select:none;-webkit-user-select:none}
+#resizeHandle::after{content:"";width:36px;height:4px;border-radius:2px;background:#d4d4d8}
+#resizeHandle:hover::after,#resizeHandle:active::after{background:#a1a1aa}
+#input{width:100%;border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-size:15px;font-family:inherit;resize:none;min-height:44px;max-height:45dvh;overflow-y:auto}
 #sendBtn{background:var(--accent);color:#fff;border:0;border-radius:10px;padding:0 18px;height:44px;font-size:15px;cursor:pointer}
 #sendBtn:disabled{opacity:.5;cursor:default}
 #uploadBtn{border:1px solid var(--border);background:#fff;border-radius:10px;height:44px;padding:0 12px;cursor:pointer}
@@ -55,6 +59,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hira
   #agents{width:100%;border-right:0}
   .msg{max-width:88%}
   #input{font-size:16px}
+  #resizeHandle{height:18px}
   #chatHead{padding:10px 12px}
   #msgs{padding:12px}
   #composer{padding:10px 12px calc(10px + env(safe-area-inset-bottom,0px))}
@@ -75,7 +80,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hira
     <div id="composer">
       <input type="file" id="fileInput" style="display:none">
       <button id="uploadBtn" title="上传图片/文件">＋</button>
-      <textarea id="input" rows="1" placeholder="给 Rumi 发消息…（Cmd/Alt+Enter 发送，Enter 换行）"></textarea>
+      <div id="inputWrap"><div id="resizeHandle" title="上下拖动调整输入框高度" aria-label="拖动调整输入框高度"></div><textarea id="input" rows="1" placeholder="给 Rumi 发消息…（Cmd/Alt+Enter 发送，Enter 换行）"></textarea></div>
       <button id="sendBtn">发送</button>
     </div>
   </div>
@@ -183,6 +188,7 @@ function clearStream(){streamBubble=null;streamId=null;}
 document.getElementById("sendBtn").onclick=sendText;
 document.getElementById("backBtn").onclick=function(){document.body.classList.remove("show-chat");try{history.replaceState(null,"","/chat");}catch(e){}};
 document.getElementById("input").addEventListener("keydown",function(e){if(e.key==="Enter"&&(e.metaKey||e.altKey)){e.preventDefault();sendText();}});
+(function(){var ta=document.getElementById("input");var handle=document.getElementById("resizeHandle");var MIN_H=44;function maxH(){return Math.max(MIN_H,Math.round(window.innerHeight*0.45));}function setH(h){h=Math.max(MIN_H,Math.min(maxH(),h));ta.style.height=h+"px";return h;}handle.addEventListener("pointerdown",function(e){e.preventDefault();var startY=e.clientY,startH=ta.getBoundingClientRect().height;try{handle.setPointerCapture(e.pointerId);}catch(err){}function mv(ev){setH(startH+(startY-ev.clientY));}function up(){handle.removeEventListener("pointermove",mv);handle.removeEventListener("pointerup",up);handle.removeEventListener("pointercancel",up);}handle.addEventListener("pointermove",mv);handle.addEventListener("pointerup",up);handle.addEventListener("pointercancel",up);});})();
 document.getElementById("uploadBtn").onclick=function(){document.getElementById("fileInput").click();};
 document.getElementById("fileInput").addEventListener("change",function(e){
   var f=e.target.files&&e.target.files[0];if(!f)return;
