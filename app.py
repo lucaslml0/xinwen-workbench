@@ -808,7 +808,7 @@ def chat_agent_status():
                 pass
 
         out.append({"id": aid, "name": name, "initial": initial, "cls": cls,
-                    "img": "/avatar-" + aid + ".png?v=5",
+                    "img": "/avatar-" + aid + ".png?v=6",
                     "video": "/avatar-" + aid + ".mp4?v=4" if aid in ("muse", "atlas", "muse-2", "muse-3", "muse-4") else "",
                     "quota": qp, "quotaAsOf": qa, "quotaReset": qr, "quotaTokens": qt,
                     "hasAvatar": os.path.exists(os.path.join(BASE, "avatar-" + aid + ".png")),
@@ -3206,6 +3206,48 @@ class Handler(BaseHTTPRequestHandler):
         u = urlparse(self.path)
         if self._proxy_fans(u, None):
             return
+        if u.path == "/manifest.json":
+            try:
+                with open(os.path.join(BASE, "manifest.json"), "rb") as f:
+                    data = f.read()
+            except Exception:
+                self.send_json({"ok": False, "msg": "not found"}, 404); return
+            self.send_response(200)
+            self.send_header("Content-Type", "application/manifest+json")
+            self.send_header("Content-Length", str(len(data)))
+            self.send_header("Cache-Control", "max-age=3600")
+            self.end_headers()
+            self.wfile.write(data)
+            return
+        if u.path == "/sw.js":
+            try:
+                with open(os.path.join(BASE, "sw.js"), "rb") as f:
+                    data = f.read()
+            except Exception:
+                self.send_json({"ok": False, "msg": "not found"}, 404); return
+            self.send_response(200)
+            self.send_header("Content-Type", "application/javascript")
+            self.send_header("Content-Length", str(len(data)))
+            self.send_header("Cache-Control", "no-cache")
+            self.end_headers()
+            self.wfile.write(data)
+            return
+        if u.path.startswith("/icons/") and u.path.endswith(".png"):
+            fn = u.path[1:]
+            if not re.fullmatch(r"icons/(icon-192|icon-512|icon-maskable-512|apple-touch-icon)\.png", fn):
+                self.send_json({"ok": False, "msg": "not found"}, 404); return
+            try:
+                with open(os.path.join(BASE, fn), "rb") as f:
+                    img = f.read()
+            except Exception:
+                self.send_json({"ok": False, "msg": "not found"}, 404); return
+            self.send_response(200)
+            self.send_header("Content-Type", "image/png")
+            self.send_header("Content-Length", str(len(img)))
+            self.send_header("Cache-Control", "max-age=86400")
+            self.end_headers()
+            self.wfile.write(img)
+            return
         if u.path == "/command-center" or u.path == "/command-center/":
             if not self.authed():
                 self.send_html(login_html(next_url="/command-center/")); return
@@ -3443,9 +3485,8 @@ class Handler(BaseHTTPRequestHandler):
             self.wfile.write(img)
             return
         if u.path.startswith("/avatar-") and u.path.endswith(".png"):
-            allowed = ("avatar-rumi.png", "avatar-Lei.png", "avatar-muse.png", "avatar-atlas.png", "avatar-muse-2.png", "avatar-muse-3.png", "avatar-muse-4.png")
             fn = u.path[1:]
-            if fn not in allowed:
+            if not re.fullmatch(r"avatar-[A-Za-z0-9_-]+\.png", fn):
                 self.send_json({"ok": False, "msg": "not found"}, 404); return
             try:
                 with open(os.path.join(BASE, fn), "rb") as f:
@@ -3460,9 +3501,8 @@ class Handler(BaseHTTPRequestHandler):
             self.wfile.write(img)
             return
         if u.path.startswith("/avatar-") and u.path.endswith(".mp4"):
-            allowed = ("avatar-Lei.mp4", "avatar-muse.mp4", "avatar-atlas.mp4", "avatar-muse-2.mp4", "avatar-muse-3.mp4", "avatar-muse-4.mp4")
             fn = u.path[1:]
-            if fn not in allowed:
+            if not re.fullmatch(r"avatar-[A-Za-z0-9_-]+\.mp4", fn):
                 self.send_json({"ok": False, "msg": "not found"}, 404); return
             try:
                 with open(os.path.join(BASE, fn), "rb") as f:

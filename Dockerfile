@@ -1,6 +1,7 @@
 FROM python:3.12-slim
 WORKDIR /app
-COPY app.py lunardate.py chat.html ./
+COPY app.py lunardate.py chat.html manifest.json sw.js ./
+COPY icons ./icons
 COPY command-center ./command-center
 COPY principle ./principle
 COPY dispatch ./dispatch
